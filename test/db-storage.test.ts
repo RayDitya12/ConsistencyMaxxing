@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '../src/db/db'
 import { ensureSlot, loggedDates, setCheck, slotsForDate } from '../src/db/queries'
+import { createTemplate } from '../src/plan/actions'
 import { checkKey, type Template } from '../src/db/types'
 import { MemoryBackend, installBackend } from '../src/storage/backend'
 import { deleteEntry, storeMedia } from '../src/storage/vault'
@@ -48,6 +49,14 @@ describe('rencana mingguan', () => {
     const second = await ensureSlot(t.id, 'U', 'Upper')
     expect(second.id).toBe(first.id)
     expect(await db.slots.count()).toBe(1)
+  })
+
+  it('huruf R lahir sebagai slot rest, bukan slot aktif yang bernama Rest', async () => {
+    await createTemplate('Workout', 'workout', 'ULURULX')
+    const byKey = Object.fromEntries((await db.slots.toArray()).map((s) => [s.key, s]))
+    expect(byKey.R.kind).toBe('rest')
+    expect(byKey.U.kind).toBe('active')
+    expect(byKey.X).toMatchObject({ kind: 'active', name: 'X' })
   })
 })
 

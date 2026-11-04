@@ -20,14 +20,22 @@ export async function createTemplate(name: string, domain: Domain, patternInput:
     archivedAt: null,
   }
   await db.templates.add(template)
-  for (const key of parsed.distinct) await ensureSlot(template.id, key, defaultNameFor(key))
+  await ensureSlotsForKeys(template.id, parsed.distinct)
   return template
 }
 
 /** Huruf yang sering dipakai orang untuk jadwal latihan dikenali, sisanya tetap huruf aslinya. */
-function defaultNameFor(key: string): string {
+function slotDefaults(key: string): { name: string; kind: SlotKind } {
   const known: Record<string, string> = { U: 'Upper', L: 'Lower', R: 'Rest', D: 'Deload', S: 'Skill' }
-  return known[key] ?? key
+  const name = known[key] ?? key
+  return { name, kind: name === 'Rest' ? 'rest' : 'active' }
+}
+
+async function ensureSlotsForKeys(templateId: string, keys: string[]) {
+  for (const key of keys) {
+    const slot = slotDefaults(key)
+    await ensureSlot(templateId, key, slot.name, slot.kind)
+  }
 }
 
 export async function updatePattern(templateId: string, patternInput: string) {
@@ -36,7 +44,7 @@ export async function updatePattern(templateId: string, patternInput: string) {
   const template = await db.templates.get(templateId)
   if (!template) throw new Error('template tidak ada')
   await db.templates.update(templateId, { pattern: parsed.keys })
-  for (const key of parsed.distinct) await ensureSlot(templateId, key, defaultNameFor(key))
+  await ensureSlotsForKeys(templateId, parsed.distinct)
   for (const slot of await db.slots.where('templateId').equals(templateId).toArray()) {
     if (!parsed.distinct.includes(slot.key)) await removeSlot(slot.id)
   }

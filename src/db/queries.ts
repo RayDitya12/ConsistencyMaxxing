@@ -1,5 +1,5 @@
 import { db } from './db'
-import { checkKey, type Check, type CheckStatus, type Item, type Slot, type Template } from './types'
+import { checkKey, type Check, type CheckStatus, type Entry, type Item, type MediaRecord, type Slot, type SlotKind, type Template } from './types'
 import { weekdayIndex } from '../lib/dates'
 import { newId } from '../lib/ids'
 
@@ -52,14 +52,36 @@ export async function loggedDates(): Promise<Set<string>> {
   return new Set(rows.map((r) => r.date))
 }
 
+export async function mediaForDate(date: string): Promise<MediaRecord[]> {
+  return db.media.where('date').equals(date).sortBy('createdAt')
+}
+
+/** Satu entri per (tanggal, slot); slotId null = bukti level hari. */
+export async function ensureEntry(date: string, slotId: string | null): Promise<Entry> {
+  const forDay = await db.entries.where('date').equals(date).toArray()
+  const hit = forDay.find((e) => e.slotId === slotId)
+  if (hit) return hit
+  const entry: Entry = { id: newId('entry'), date, slotId, note: '', capturedAt: Date.now() }
+  await db.entries.add(entry)
+  return entry
+}
+
+export async function entriesForDate(date: string): Promise<Entry[]> {
+  return db.entries.where('date').equals(date).toArray()
+}
+
+export async function setNote(entryId: string, note: string) {
+  await db.entries.update(entryId, { note })
+}
+
 export async function countMediaByDate(date: string): Promise<number> {
   return db.media.where('date').equals(date).count()
 }
 
-export async function ensureSlot(templateId: string, key: string, name: string): Promise<Slot> {
+export async function ensureSlot(templateId: string, key: string, name: string, kind: SlotKind = 'active'): Promise<Slot> {
   const existing = await db.slots.where('[templateId+key]').equals([templateId, key]).first()
   if (existing) return existing
-  const slot: Slot = { id: newId('slot'), templateId, key, name, kind: 'active', note: '' }
+  const slot: Slot = { id: newId('slot'), templateId, key, name, kind, note: '' }
   await db.slots.add(slot)
   return slot
 }

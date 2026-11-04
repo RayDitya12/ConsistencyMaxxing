@@ -25,7 +25,7 @@ export class CameraUnavailable extends Error {
   }
 }
 
-export async function openCamera(facing: Facing = 'environment'): Promise<OpenedCamera> {
+export async function openCamera(facing: Facing = 'environment', target?: HTMLVideoElement): Promise<OpenedCamera> {
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia)
     throw new CameraUnavailable('unsupported')
   if (!window.isSecureContext) throw new CameraUnavailable('insecure')
@@ -39,7 +39,7 @@ export async function openCamera(facing: Facing = 'environment'): Promise<Opened
     throw new CameraUnavailable((err as DOMException)?.name === 'NotAllowedError' ? 'denied' : 'absent')
   }
   const track = stream.getVideoTracks()[0]
-  const video = document.createElement('video')
+  const video = target ?? document.createElement('video')
   video.srcObject = stream
   video.setAttribute('playsinline', '')
   video.muted = true
