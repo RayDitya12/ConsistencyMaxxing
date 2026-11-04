@@ -3,6 +3,7 @@ import { describePattern, parseWeeklyPattern } from '../src/plan/pattern'
 import { buildFileName, extensionFor, mediaPath, sanitizeLabel, thumbPath } from '../src/lib/filename'
 import { computeLayout, coverRect } from '../src/capture/layout'
 import { buildCaption, truncate, wrapLines } from '../src/capture/caption'
+import { thumbSize } from '../src/capture/card'
 import { CAPTION_FIELDS } from '../src/capture/caption'
 
 describe('pola mingguan', () => {
@@ -90,8 +91,12 @@ describe('geometri kartu', () => {
     expect(rect.y + rect.h).toBeGreaterThanOrEqual(layout.photo.h)
   })
 
-  it('pan menggeser hanya sumbu yang punya ruang, zoom membuka dua-duanya', () => {
-    const layout = computeLayout('portrait')
+  it('thumbnail menjaga rasio kartu, bukan dipaksa jadi bujur sangkar', () => {
+    expect(thumbSize(1080, 1350, 320)).toEqual({ w: 256, h: 320 })
+    expect(thumbSize(1350, 1080, 320)).toEqual({ w: 320, h: 256 })
+  })
+
+  it('pan menggeser hanya sumbu yang punya ruang, zoom membuka dua-duanya', () => {    const layout = computeLayout('portrait')
     const base = coverRect(1600, 1200, layout.photo)
     const panned = coverRect(1600, 1200, layout.photo, { x: 1, y: 1 })
     expect(panned.x).toBeGreaterThan(base.x)

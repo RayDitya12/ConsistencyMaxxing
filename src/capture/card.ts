@@ -128,9 +128,16 @@ function drawWeekBox(ctx: Ctx, text: string, x: number, y: number, p: Palette) {
   ctx.fillText(text, x + 22, y + 10)
 }
 
+/** Sisi terpanjang yang dipertahankan; tinggi mengikuti rasio kartu supaya thumbnail tidak gepeng. */
+export function thumbSize(cardWidth: number, cardHeight: number, edge: number) {
+  const scale = edge / Math.max(cardWidth, cardHeight)
+  return { w: Math.round(cardWidth * scale), h: Math.round(cardHeight * scale) }
+}
+
 export function drawThumb(card: RenderedCard, edge: number): CanvasFactory {
-  const { canvas, ctx } = makeCanvas(edge, edge)
-  ctx.drawImage(card.canvas as CanvasImageSource, 0, 0, edge, edge)
+  const { w, h } = thumbSize(card.width, card.height, edge)
+  const { canvas, ctx } = makeCanvas(w, h)
+  ctx.drawImage(card.canvas as CanvasImageSource, 0, 0, w, h)
   return { canvas, ctx }
 }
 
