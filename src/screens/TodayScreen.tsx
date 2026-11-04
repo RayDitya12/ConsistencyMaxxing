@@ -13,6 +13,7 @@ import {
 import { dailyStreak, weeklyStreak } from '../db/derive'
 import { formatLong, loggingDateKey, todayKey } from '../lib/dates'
 import { GRACE_HOURS_AFTER_MIDNIGHT, WEEK_THRESHOLD } from '../config'
+import type { Check, Item, MediaRecord } from '../db/types'
 import { shutterReady } from '../storage/bootstrap'
 import { useBoot } from '../storage/useBoot'
 import { CameraShutter } from '../components/CameraShutter'
@@ -37,8 +38,9 @@ function useLoggingDay() {
   return day
 }
 
-const NO_MAP = new Map()
-const NO_LIST: never[] = []
+const NO_CHECKS = new Map<string, Check>()
+const NO_ITEMS = new Map<string, Item[]>()
+const NO_MEDIA: MediaRecord[] = []
 
 export function TodayScreen() {
   const day = useLoggingDay()
@@ -49,9 +51,9 @@ export function TodayScreen() {
   const logged = useLiveQuery(async () => loggedDates(), [target], null)
   const slots = useLiveQuery(() => (target ? slotsForDate(target) : Promise.resolve([])), [target], [])
   const slotIds = slots.map((s) => s.id).join(',')
-  const items = useLiveQuery(() => itemsForSlots(slotIds ? slotIds.split(',') : []), [slotIds], new Map())
-  const checks = useLiveQuery(() => (target ? checksForDate(target) : Promise.resolve(NO_MAP)), [target], NO_MAP)
-  const media = useLiveQuery(() => (target ? mediaForDate(target) : Promise.resolve(NO_LIST)), [target], NO_LIST)
+  const items = useLiveQuery(() => itemsForSlots(slotIds ? slotIds.split(',') : []), [slotIds], NO_ITEMS)
+  const checks = useLiveQuery(() => (target ? checksForDate(target) : Promise.resolve(NO_CHECKS)), [target], NO_CHECKS)
+  const media = useLiveQuery(() => (target ? mediaForDate(target) : Promise.resolve(NO_MEDIA)), [target], NO_MEDIA)
   const entries = useLiveQuery(() => db.entries.where('date').equals(target).toArray(), [target], [])
   const noteEntry = entries.find((e) => e.slotId === null)
 
@@ -79,7 +81,7 @@ export function TodayScreen() {
                 <CameraShutter dateKey={target} slotId={slot?.id ?? null} slotLabel={slot?.name ?? null} />
               </div>
               <div className="mt-4">
-                <PhotoWall records={media} />
+                <PhotoWall records={media} emptyText="Belum ada foto hari ini. Satu foto sudah cukup untuk mencatat hari." />
               </div>
             </>
           ) : (

@@ -56,6 +56,12 @@ export async function mediaForDate(date: string): Promise<MediaRecord[]> {
   return db.media.where('date').equals(date).sortBy('createdAt')
 }
 
+/** Semua bukti dalam satu rentang tanggal, terpakai untuk mengisi grid bulan sekali jalan. */
+export async function mediaBetween(from: string, to: string): Promise<MediaRecord[]> {
+  const rows = await db.media.where('date').between(from, to, true, true).toArray()
+  return rows.sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)
+}
+
 /** Satu entri per (tanggal, slot); slotId null = bukti level hari. */
 export async function ensureEntry(date: string, slotId: string | null): Promise<Entry> {
   const forDay = await db.entries.where('date').equals(date).toArray()

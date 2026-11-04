@@ -5,12 +5,11 @@ import { useBlobUrl } from '../storage/useBlobUrl'
 import { formatBytes } from '../storage/capability'
 import { Button, Empty } from './ui'
 
-export function PhotoWall({ records }: { records: MediaRecord[] }) {
+export function PhotoWall({ records, emptyText = 'Belum ada foto.' }: { records: MediaRecord[]; emptyText?: string }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const open = records.find((r) => r.id === openId) ?? null
 
-  if (records.length === 0)
-    return <Empty>Belum ada foto hari ini. Satu foto sudah cukup untuk mencatat hari.</Empty>
+  if (records.length === 0) return <Empty>{emptyText}</Empty>
 
   return (
     <>

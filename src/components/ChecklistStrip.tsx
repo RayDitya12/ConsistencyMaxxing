@@ -43,7 +43,7 @@ export function ChecklistStrip({ date, items, checks }: Props) {
   )
 }
 
-function Mark({ status }: { status: string }) {
+export function Mark({ status }: { status: string }) {
   if (status === 'done')
     return <span className="block h-[18px] w-[18px] shrink-0" style={{ background: 'var(--ink)' }} />
   if (status === 'skip')
