@@ -28,16 +28,17 @@ export function SavedToast() {
     >
       {message && (
         <div
-          className="flex items-center gap-2 px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.12em]"
-          style={{ background: 'var(--ink)', color: 'var(--surface)' }}
+          className="flex items-center gap-2 rounded-card px-4 py-2 text-[13px] font-bold"
+          style={{ background: 'var(--ink)', color: 'var(--surface)', boxShadow: 'var(--shadow)' }}
         >
           <svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true">
             <path
               d="M2 7.4 5.2 10.6 12 3.4"
               fill="none"
-              stroke="currentColor"
+              stroke="var(--acid)"
               strokeWidth="2"
-              strokeLinecap="square"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
           </svg>
           {message}

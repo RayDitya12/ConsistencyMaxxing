@@ -116,8 +116,11 @@ export function CameraShutter({ dateKey, planId, planLabel }: Props) {
   }
 
   return (
-    <div className="pb-4">
-      <div className="relative w-full overflow-hidden border" style={{ borderColor: 'var(--line)' }}>
+    <div className="pb-2">
+      <div
+        className="relative w-full overflow-hidden rounded-card border"
+        style={{ borderColor: 'var(--hairline)' }}
+      >
         <div className="aspect-square w-full">
           <video
             ref={videoRef}
@@ -151,11 +154,11 @@ export function CameraShutter({ dateKey, planId, planLabel }: Props) {
           aria-label="Ambil foto"
           disabled={stage !== 'live' || busy}
           onClick={() => void shoot()}
-          className="flex h-[74px] w-[74px] items-center justify-center rounded-full border-2 disabled:opacity-40"
-          style={{ borderColor: 'var(--line)' }}
+          className="flex h-[74px] w-[74px] items-center justify-center rounded-full border-[1.5px] disabled:opacity-40"
+          style={{ borderColor: 'var(--hairline)' }}
         >
           <span
-            className="block h-[54px] w-[54px] rounded-full"
+            className="block h-[54px] w-[54px] rounded-full transition"
             style={{ background: busy || stage !== 'live' ? 'var(--ink-2)' : 'var(--ink)' }}
           />
         </button>
@@ -188,8 +191,8 @@ function IconButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="touch-target flex h-11 w-11 items-center justify-center rounded-full border text-ink-2 disabled:opacity-40"
-      style={{ borderColor: 'var(--hairline)' }}
+      className="touch-target flex h-11 w-11 items-center justify-center rounded-card border text-ink-2 disabled:opacity-40"
+      style={{ borderColor: 'var(--hairline)', background: 'var(--surface)' }}
     >
       {children}
     </button>
@@ -198,8 +201,8 @@ function IconButton({
 
 function GalleryIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <rect x="2.5" y="4.5" width="19" height="15" rx="2" />
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
       <circle cx="8.4" cy="9.6" r="1.4" />
       <path d="M3.5 17.5l4.5-4.5 3.5 3 3-2.5 5.5 5" />
     </svg>
@@ -208,7 +211,7 @@ function GalleryIcon() {
 
 function FlipIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4.5 10a7.5 7.5 0 0112.6-3.4M19.5 14a7.5 7.5 0 01-12.6 3.4" />
       <path d="M17 3.5v3.2h-3.2M7 20.5v-3.2h3.2" />
     </svg>

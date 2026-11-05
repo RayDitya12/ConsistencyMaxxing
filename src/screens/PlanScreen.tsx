@@ -25,12 +25,20 @@ export function PlanScreen() {
 
   return (
     <Screen>
-      <TopBar title="Plan" right={<span className="num text-[12px] text-ink-2">{plans.length}</span>} />
-      <div className="flex-1 overflow-y-auto">
+      <TopBar
+        eyebrow="Waktu yang kamu janjikan"
+        title="Plan"
+        right={
+          <span className="num rounded-card border px-2 py-1 text-[11px] text-ink-2" style={{ borderColor: 'var(--hairline)' }}>
+            {plans.length}
+          </span>
+        }
+      />
+      <div className="flex-1 overflow-y-auto pb-4">
         {adding ? (
           <NewPlan onDone={() => setAdding(false)} />
         ) : (
-          <Section label="Rencanamu">
+          <Section label="Buat satu">
             <Button variant="accent" className="w-full" onClick={() => setAdding(true)}>
               + Tambah rencana
             </Button>
@@ -41,7 +49,7 @@ export function PlanScreen() {
                   sendiri, tidak ada yang dibuat otomatis.
                 </Empty>
                 <Button className="w-full" onClick={() => void seedWorkoutExample()}>
-                  Isi contoh: Workout (Senin Upper, Selasa Lower, dst)
+                  Isi contoh: Workout
                 </Button>
               </>
             )}
@@ -113,11 +121,11 @@ function DayPicker({ days, onToggle }: { days: number[]; onToggle: (index: numbe
           aria-pressed={days.includes(i)}
           aria-label={`${label}: ${days.includes(i) ? 'sudah dipilih' : 'belum dipilih'}`}
           onClick={() => onToggle(i)}
-          className="touch-target min-w-[44px] flex-1 border-2 text-[12px] font-semibold uppercase tracking-[0.08em]"
+          className="touch-target min-w-[44px] flex-1 rounded-card border text-[12px] font-bold"
           style={
             days.includes(i)
               ? { background: 'var(--ink)', color: 'var(--surface)', borderColor: 'var(--ink)' }
-              : { background: 'transparent', color: 'var(--ink-2)', borderColor: 'var(--hairline)' }
+              : { background: 'var(--surface)', color: 'var(--ink-2)', borderColor: 'var(--hairline)' }
           }
         >
           {label}
@@ -148,16 +156,17 @@ function PlanCard({ plan }: { plan: Plan }) {
   }
 
   return (
-    <section className="border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
+    <section className="mx-4 my-3 rounded-card border bg-raised p-4" style={{ borderColor: 'var(--hairline)' }}>
+      <span className="eyebrow mb-1 block">Rencana</span>
       <input
         value={plan.name}
         aria-label="nama rencana"
         onChange={(e) => void renamePlan(plan.id, e.target.value)}
-        className="touch-target mb-3 w-full border-b-2 bg-transparent py-1 text-[16px] font-semibold outline-none"
-        style={{ borderColor: 'var(--line)' }}
+        className="touch-target mb-3 w-full rounded-card border-b bg-transparent px-0 py-1 text-[19px] font-bold tracking-[-0.025em] outline-none"
+        style={{ borderColor: 'var(--hairline)' }}
       />
       <DayPicker days={plan.days} onToggle={(i) => void setPlanDays(plan.id, toggleDay(plan.days, i))} />
-      <p className="mt-2 text-[12px] leading-relaxed text-ink-2">{formatDays(plan.days)}</p>
+      <p className="eyebrow mt-2">{formatDays(plan.days)}</p>
       <div className="mt-4">
         <SubplanList planId={plan.id} />
       </div>
@@ -183,27 +192,27 @@ function SubplanList({ planId }: { planId: string }) {
 
   return (
     <div>
-      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-2">Subplan</h3>
-      <ul>
+      <h3 className="eyebrow mb-2">Subplan</h3>
+      <ul className="flex flex-col gap-1">
         {items.map((item, i) => (
-          <li key={item.id} className="flex items-center gap-1 border-b py-1" style={{ borderColor: 'var(--hairline)' }}>
+          <li key={item.id} className="flex items-center gap-1 rounded-card border px-2" style={{ borderColor: 'var(--hairline)' }}>
             <input
               defaultValue={item.label}
               onBlur={(e) => renameSubplan(item.id, e.target.value)}
-              className="touch-target min-w-0 flex-1 bg-transparent text-[16px] outline-none"
+              className="touch-target min-w-0 flex-1 bg-transparent text-[15px] outline-none"
             />
-            <button className="touch-target px-1 text-[12px] text-ink-2" onClick={() => moveSubplan(item.id, -1)} disabled={i === 0} aria-label="Naik">
+            <button className="touch-target px-1 text-[13px] text-ink-2" onClick={() => moveSubplan(item.id, -1)} disabled={i === 0} aria-label="Naik">
               ↑
             </button>
             <button
-              className="touch-target px-1 text-[12px] text-ink-2"
+              className="touch-target px-1 text-[13px] text-ink-2"
               onClick={() => moveSubplan(item.id, 1)}
               disabled={i === items.length - 1}
               aria-label="Turun"
             >
               ↓
             </button>
-            <button className="touch-target px-1 text-[12px]" onClick={() => removeSubplan(item.id)} aria-label={`hapus subplan ${item.label}`}>
+            <button className="touch-target px-1 text-[15px] text-ink-2" onClick={() => removeSubplan(item.id)} aria-label={`hapus subplan ${item.label}`}>
               ×
             </button>
           </li>
@@ -220,8 +229,8 @@ function SubplanList({ planId }: { planId: string }) {
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="tambah subplan, mis. Bab 3 selesai"
-          className="touch-target min-w-0 flex-1 border-b-2 bg-transparent py-1 text-[16px] outline-none"
+          placeholder="tambah subplan"
+          className="touch-target min-w-0 flex-1 rounded-card border bg-transparent px-3 text-[15px] outline-none"
           style={{ borderColor: 'var(--hairline)' }}
         />
         <Button type="submit" disabled={draft.trim().length === 0}>

@@ -26,7 +26,12 @@ export function PhotoWall({ records, emptyText = 'Belum ada foto.' }: { records:
 function PhotoThumb({ record, onOpen }: { record: MediaRecord; onOpen: () => void }) {
   const url = useBlobUrl(record.thumb)
   return (
-    <button type="button" onClick={onOpen} className="aspect-square w-full overflow-hidden border" style={{ borderColor: 'var(--line)' }}>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="aspect-square w-full overflow-hidden rounded-card border"
+      style={{ borderColor: 'var(--hairline)' }}
+    >
       {url ? (
         <img src={url} alt={record.caption} className="h-full w-full object-cover" />
       ) : (
@@ -55,13 +60,13 @@ function PhotoViewer({ record, onClose }: { record: MediaRecord; onClose: () => 
     >
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="num text-[12px] uppercase tracking-[0.14em] text-ink-2">{record.caption}</span>
-          <button type="button" onClick={onClose} className="touch-target px-2 text-[12px] uppercase tracking-[0.14em]">
-            tutup
-          </button>
+          <span className="eyebrow">{record.caption}</span>
+          <Button className="text-[12px]" onClick={onClose}>
+            Tutup
+          </Button>
         </div>
-        {url && <img src={url} alt={record.caption} className="w-full border" style={{ borderColor: 'var(--line)' }} />}
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+        {url && <img src={url} alt={record.caption} className="w-full rounded-card border" style={{ borderColor: 'var(--hairline)' }} />}
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-card border p-4 text-[13px]" style={{ borderColor: 'var(--hairline)' }}>
           <Line label="nama file" value={record.file.replace(/^media\//, '')} />
           <Line label="ukuran" value={formatBytes(record.bytes)} />
           <Line label="sumber" value={record.source === 'viewfinder' ? 'kamera' : 'berkas'} />
@@ -80,8 +85,8 @@ function PhotoViewer({ record, onClose }: { record: MediaRecord; onClose: () => 
 function Line({ label, value }: { label: string; value: string }) {
   return (
     <>
-      <dt className="text-ink-2">{label}</dt>
-      <dd className="truncate text-right">{value}</dd>
+      <dt className="eyebrow">{label}</dt>
+      <dd className="num truncate text-right text-[13px] font-bold tracking-[-0.01em]">{value}</dd>
     </>
   )
 }

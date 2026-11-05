@@ -1,32 +1,47 @@
 export interface Palette {
   surface: string
   surface2: string
+  raised: string
   ink: string
   ink2: string
   line: string
+  hairline: string
   accent: string
   accentInk: string
+  accentSoft: string
+  acid: string
+  danger: string
 }
 
 /** Cermin dari tokens.css. Dibaca dari CSS supaya warna kartu dan warna UI tidak bisa-drift. */
 const FALLBACK_LIGHT: Palette = {
-  surface: '#f2f2f0',
-  surface2: '#e4e4e1',
-  ink: '#111111',
-  ink2: '#5c5c58',
-  line: '#111111',
-  accent: '#e8540c',
-  accentInk: '#ffffff',
+  surface: '#f8f7f3',
+  surface2: '#efece3',
+  raised: '#fdfcf8',
+  ink: '#181a17',
+  ink2: '#5e6258',
+  line: '#181a17',
+  hairline: '#d3d6ca',
+  accent: '#2454df',
+  accentInk: '#f8f7f3',
+  accentSoft: '#e6ebfb',
+  acid: '#dce87a',
+  danger: '#a41f1f',
 }
 
 const CSS_NAMES: Record<keyof Palette, string> = {
   surface: '--surface',
   surface2: '--surface-2',
+  raised: '--raised',
   ink: '--ink',
   ink2: '--ink-2',
   line: '--line',
+  hairline: '--hairline',
   accent: '--accent',
   accentInk: '--accent-ink',
+  accentSoft: '--accent-soft',
+  acid: '--acid',
+  danger: '--danger',
 }
 
 export function paletteFromDocument(doc?: Document): Palette {

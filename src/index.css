@@ -2,33 +2,30 @@
 @import './tokens.css';
 
 @font-face {
-  font-family: 'Public Sans';
+  font-family: 'Hanken Grotesk';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 800;
   font-display: swap;
-  src: url('/fonts/public-sans-400.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Public Sans';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('/fonts/public-sans-600.woff2') format('woff2');
+  src: url('/fonts/hanken-grotesk-var.woff2') format('woff2');
 }
 
 @theme inline {
-  --font-sans: 'Public Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Hanken Grotesk', system-ui, 'Segoe UI', Roboto, sans-serif;
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-raised: var(--raised);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-line: var(--line);
   --color-hairline: var(--hairline);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-acid: var(--acid);
   --color-danger: var(--danger);
-  --radius-none: 0px;
+  --radius-card: 6px;
+  --radius-pill: 999px;
+  --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @layer base {
@@ -43,13 +40,23 @@
     background: var(--surface);
     color: var(--ink);
     font-family: var(--font-sans);
+    font-size: 15px;
     -webkit-text-size-adjust: 100%;
     overscroll-behavior-y: none;
+  }
+
+  /* judul layar dan angka besar: grotesk ketat, bukan uppercase lebar */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+    font-weight: 700;
   }
 
   /* accent cuma untuk rule, box, dan numerik besar; teks body tetap ink */
   .num {
     font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'ss01';
   }
 
   button,
@@ -58,6 +65,14 @@
   select {
     font: inherit;
     color: inherit;
+  }
+
+  button {
+    transition:
+      background-color 0.35s var(--ease-glide),
+      color 0.35s var(--ease-glide),
+      border-color 0.35s var(--ease-glide),
+      transform 0.35s var(--ease-glide);
   }
 
   :focus-visible {
@@ -73,4 +88,12 @@
 @utility touch-target {
   min-height: 44px;
   min-width: 44px;
+}
+
+@utility eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-2);
 }

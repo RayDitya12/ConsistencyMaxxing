@@ -21,20 +21,20 @@ export function ChecklistStrip({ date, items, checks }: Props) {
   }
 
   return (
-    <ul className="flex flex-col">
+    <ul className="flex flex-col gap-1">
       {items.map((item) => {
         const status = checks.get(item.id)?.status ?? ''
         return (
-          <li key={item.id} className="border-b" style={{ borderColor: 'var(--hairline)' }}>
+          <li key={item.id}>
             <button
               type="button"
               onClick={() => cycle(item)}
               aria-label={`${item.label}: ${READING[status]}`}
-              className="touch-target flex w-full items-center gap-3 py-2 text-left"
+              className="touch-target flex w-full items-center gap-3 rounded-card px-2 py-2 text-left hover:bg-surface-2"
             >
               <Mark status={status} />
-              <span className="flex-1 text-[15px]">{item.label}</span>
-              <span className="text-[11px] uppercase tracking-[0.14em] text-ink-2">{READING[status]}</span>
+              <span className={`flex-1 text-[15px] ${status === 'skip' ? 'text-ink-2 line-through' : ''}`}>{item.label}</span>
+              <span className="eyebrow shrink-0">{READING[status]}</span>
             </button>
           </li>
         )
@@ -49,15 +49,18 @@ export function Mark({ status }: { status: string }) {
   const filled = status === 'done' || status === 'full'
   if (filled)
     return (
-      <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center" style={{ background: 'var(--ink)' }}>
+      <span
+        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px]"
+        style={{ background: 'var(--ink)' }}
+      >
         <Tick color="var(--surface)" />
       </span>
     )
   if (status === 'half')
     return (
       <span
-        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center"
-        style={{ border: '2px solid var(--line)', background: 'var(--surface)' }}
+        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px]"
+        style={{ border: '1.5px solid var(--accent)', background: 'var(--accent-soft)' }}
       >
         <Tick color="var(--accent)" />
       </span>
@@ -65,19 +68,24 @@ export function Mark({ status }: { status: string }) {
   if (status === 'skip')
     return (
       <span
-        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center text-[13px] leading-none"
-        style={{ border: '2px solid var(--hairline)', color: 'var(--ink-2)' }}
+        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] text-[13px] leading-none"
+        style={{ border: '1.5px solid var(--hairline)', color: 'var(--ink-2)' }}
       >
         &ndash;
       </span>
     )
-  return <span className="block h-[18px] w-[18px] shrink-0" style={{ border: '2px solid var(--hairline)' }} />
+  return (
+    <span
+      className="block h-[18px] w-[18px] shrink-0 rounded-[4px]"
+      style={{ border: '1.5px solid var(--hairline)' }}
+    />
+  )
 }
 
 function Tick({ color }: { color: string }) {
   return (
     <svg viewBox="0 0 12 12" className="h-[11px] w-[11px]" aria-hidden="true">
-      <path d="M1.5 6.4 4.4 9.3 10.5 2.7" fill="none" stroke={color} strokeWidth="2" strokeLinecap="square" />
+      <path d="M1.5 6.4 4.4 9.3 10.5 2.7" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }

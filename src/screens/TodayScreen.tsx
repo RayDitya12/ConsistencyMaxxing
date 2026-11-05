@@ -61,34 +61,40 @@ export function TodayScreen() {
   return (
     <Screen>
       <TopBar
+        eyebrow="Hari ini"
         title={formatLong(target)}
-        right={<span className="num text-[12px] text-ink-2">{media.length} foto</span>}
+        right={
+          <span className="num rounded-card border px-2 py-1 text-[11px] text-ink-2" style={{ borderColor: 'var(--hairline)' }}>
+            {media.length} foto
+          </span>
+        }
       />
-      <div className="flex items-end justify-between border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
+      <div className="flex items-end gap-6 border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
         <Streak value={logged ? weeklyStreak(logged, day.today, WEEK_THRESHOLD) : 0} unit={`minggu (${WEEK_THRESHOLD}/7)`} big />
-        <Streak value={logged ? dailyStreak(logged, day.today) : 0} unit="hari berturut" />
+        <Streak value={logged ? dailyStreak(logged, day.today) : 0} unit="hari berfoto" />
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-4">
         {plans.length === 0 ? (
           <Section label="Plan hari ini">
-            <p className="py-6 text-[15px] leading-relaxed text-ink-2">Tidak ada plan hari ini.</p>
+            <p className="text-[15px] leading-relaxed text-ink-2">Tidak ada plan hari ini.</p>
           </Section>
         ) : (
           <Section label={`Plan hari ini · ${photographed}/${plans.length} punya foto`}>
-            <ul className="-mx-4 flex flex-col">
-              {plans.map((p) => (
-                <PlanRow
-                  key={p.id}
-                  date={target}
-                  planId={p.id}
-                  name={p.name}
-                  status={statuses.get(p.id)?.state ?? 'open'}
-                  skipped={skipped.has(p.id)}
-                  photos={statuses.get(p.id)?.photos ?? 0}
-                  items={items.get(p.id) ?? []}
-                  checks={checks}
-                  onOpen={() => setOpen({ planId: p.id, label: p.name })}
-                />
+            <ul className="flex flex-col">
+              {plans.map((p, i) => (
+                <li key={p.id} className={i > 0 ? 'border-t pt-3' : ''} style={i > 0 ? { borderColor: 'var(--hairline)' } : undefined}>
+                  <PlanRow
+                    date={target}
+                    planId={p.id}
+                    name={p.name}
+                    status={statuses.get(p.id)?.state ?? 'open'}
+                    skipped={skipped.has(p.id)}
+                    photos={statuses.get(p.id)?.photos ?? 0}
+                    items={items.get(p.id) ?? []}
+                    checks={checks}
+                    onOpen={() => setOpen({ planId: p.id, label: p.name })}
+                  />
+                </li>
               ))}
             </ul>
           </Section>
@@ -109,8 +115,8 @@ export function TodayScreen() {
               const entry = await ensureEntry(target, null)
               await setNote(entry.id, e.target.value)
             }}
-            className="w-full resize-y border-2 bg-transparent p-3 text-[16px] leading-relaxed outline-none"
-            style={{ borderColor: 'var(--line)' }}
+            className="w-full resize-y rounded-card border bg-transparent p-3 text-[16px] leading-relaxed outline-none"
+            style={{ borderColor: 'var(--hairline)' }}
           />
         </Section>
       </div>
@@ -157,12 +163,12 @@ function PlanRow({
   }
 
   return (
-    <li className="border-b px-4" style={{ borderColor: 'var(--hairline)' }}>
+    <div>
       <div className="flex items-center gap-2">
-        <button type="button" onClick={onOpen} className="touch-target flex min-w-0 flex-1 items-center gap-3 py-3 text-left">
+        <button type="button" onClick={onOpen} className="touch-target flex min-w-0 flex-1 items-center gap-3 py-2 text-left">
           <Mark status={status} />
-          <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{name}</span>
-          <span className="num shrink-0 text-[11px] uppercase tracking-[0.12em] text-ink-2">
+          <span className="min-w-0 flex-1 truncate text-[16px] font-bold tracking-[-0.02em]">{name}</span>
+          <span className="eyebrow shrink-0">
             {READING[status]}
             {photos > 0 ? ` · ${photos}` : ''}
           </span>
@@ -173,11 +179,11 @@ function PlanRow({
               type="button"
               aria-label={`${name}: ${status === 'half' ? 'batalkan selesai' : 'tandai selesai tanpa foto'}`}
               onClick={() => void finish()}
-              className="touch-target px-2 text-[11px] uppercase tracking-[0.12em]"
+              className="touch-target rounded-card px-2 text-[10px] font-bold uppercase tracking-[0.09em]"
               style={
                 status === 'half'
                   ? { background: 'var(--accent)', color: 'var(--accent-ink)' }
-                  : { border: '2px solid var(--hairline)', color: 'var(--ink-2)' }
+                  : { border: '1.5px solid var(--hairline)', color: 'var(--ink-2)' }
               }
             >
               selesai
@@ -187,11 +193,11 @@ function PlanRow({
             type="button"
             aria-label={`${name}: ${skipped ? 'batalkan lewati' : 'lewati hari ini'}`}
             onClick={() => void setEntryStatus(date, planId, skipped ? null : 'skip')}
-            className="touch-target px-2 text-[11px] uppercase tracking-[0.12em]"
+            className="touch-target rounded-card px-2 text-[10px] font-bold uppercase tracking-[0.09em]"
             style={
               skipped
                 ? { background: 'var(--ink)', color: 'var(--surface)' }
-                : { border: '2px solid var(--hairline)', color: 'var(--ink-2)' }
+                : { border: '1.5px solid var(--hairline)', color: 'var(--ink-2)' }
             }
           >
             lewati
@@ -199,11 +205,11 @@ function PlanRow({
         </div>
       </div>
       {items.length > 0 && (
-        <div className="pb-3">
+        <div className="pb-2 pl-8">
           <ChecklistStrip date={date} items={items} checks={checks} />
         </div>
       )}
-    </li>
+    </div>
   )
 }
 
@@ -229,24 +235,25 @@ function PlanSheet({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto p-4" style={{ background: 'var(--surface)' }}>
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-4 pb-8">
-        <div className="flex items-baseline justify-between border-b-2 pb-2" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="text-[15px] font-semibold">{label}</h2>
-          <button type="button" onClick={onClose} className="touch-target px-2 text-[12px] uppercase tracking-[0.14em]">
-            tutup
-          </button>
+        <div className="flex items-end justify-between border-b pb-2" style={{ borderColor: 'var(--hairline)' }}>
+          <div className="min-w-0">
+            <span className="eyebrow block">Plan hari ini</span>
+            <h2 className="truncate text-[20px] font-bold leading-tight">{label}</h2>
+          </div>
+          <Button className="text-[12px]" onClick={onClose}>
+            Tutup
+          </Button>
         </div>
         {ready ? (
           <CameraShutter dateKey={date} planId={planId} planLabel={label} />
         ) : (
           <StorageProblem boot={boot} />
         )}
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-2">
-            {records.length} foto plan ini
-          </h3>
+        <div className="rounded-card border p-4" style={{ borderColor: 'var(--hairline)' }}>
+          <h3 className="eyebrow mb-2">{records.length} foto plan ini</h3>
           <PhotoWall records={records} emptyText="Belum ada foto pada plan ini." />
         </div>
-        <p className="text-[12px] leading-relaxed text-ink-2">
+        <p className="text-[13px] leading-relaxed text-ink-2">
           Satu foto menutup plan ini. Tanpa foto, plan berhenti di setengah selesai dan streak tidak ikut hidup.
         </p>
         <div className="flex flex-wrap gap-2">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { SavedToast } from './components/SavedToast'
+import { CalendarIcon, PlanIcon, ProfileIcon, TodayIcon } from './components/icons'
 import { PlanScreen } from './screens/PlanScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { TodayScreen } from './screens/TodayScreen'
@@ -7,11 +8,11 @@ import { CalendarScreen } from './screens/CalendarScreen'
 
 type Route = 'today' | 'calendar' | 'plan' | 'profil'
 
-const ROUTES: { key: Route; label: string }[] = [
-  { key: 'today', label: 'Hari ini' },
-  { key: 'calendar', label: 'Kalender' },
-  { key: 'plan', label: 'Plan' },
-  { key: 'profil', label: 'Profil' },
+const ROUTES: { key: Route; label: string; Icon: typeof TodayIcon }[] = [
+  { key: 'today', label: 'Hari ini', Icon: TodayIcon },
+  { key: 'calendar', label: 'Kalender', Icon: CalendarIcon },
+  { key: 'plan', label: 'Plan', Icon: PlanIcon },
+  { key: 'profil', label: 'Profil', Icon: ProfileIcon },
 ]
 
 function readHash(): Route {
@@ -48,22 +49,28 @@ export default function App() {
       </div>
       <SavedToast />
       <nav
-        className="flex border-t-2 safe-bottom"
-        style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}
+        className="flex gap-1 border-t px-3 pb-1 pt-2 safe-bottom"
+        style={{ borderColor: 'var(--hairline)', background: 'var(--surface)' }}
       >
-        {ROUTES.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => go(r.key)}
-            className="touch-target flex-1 truncate text-[10px] uppercase tracking-[0.08em]"
-            style={{
-              color: route === r.key ? 'var(--ink)' : 'var(--ink-2)',
-              borderBottom: route === r.key ? '3px solid var(--accent)' : '3px solid transparent',
-            }}
-          >
-            {r.label}
-          </button>
-        ))}
+        {ROUTES.map(({ key, label, Icon }) => {
+          const active = route === key
+          return (
+            <button
+              key={key}
+              onClick={() => go(key)}
+              aria-current={active ? 'page' : undefined}
+              className="touch-target flex flex-1 flex-col items-center justify-center gap-1 rounded-card py-2 text-[10px] font-semibold tracking-[0.06em] uppercase"
+              style={
+                active
+                  ? { background: 'var(--accent-soft)', color: 'var(--accent)' }
+                  : { color: 'var(--ink-2)' }
+              }
+            >
+              <Icon size={20} />
+              <span className="truncate">{label}</span>
+            </button>
+          )
+        })}
       </nav>
     </div>
   )

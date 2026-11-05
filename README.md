@@ -17,15 +17,17 @@ sendiri.
 ```
 npm install
 npm run dev        # http://localhost:5173
-npm test           # vitest, 65 test
+npm test           # vitest, 67 test
 npm run lint       # oxlint
 npm run build         # dist/ + service worker
 npm run preview       # sajikan hasil build, cek mode offline di sini
 ```
 
-Font subset sudah ikut repo (`public/fonts/`). `npm run fonts` hanya perlu dijalankan kalau subsetnya
-mau diganti atau file-nya hilang — script itu men-download 400 dan 600 sebagai dua permintaan
-terpisah dan menolak kalau kedua weight ternyata mengembalikan berkas yang sama.
+Fontnya satu woff2 variable yang ikut repo (`public/fonts/hanken-grotesk-var.woff2`, 400..800, 34 KB).
+`npm run fonts` hanya perlu dijalankan kalau filenya hilang atau family-nya mau diganti — script itu
+meminta satu rentang weight dalam satu permintaan (tidak seperti dulu, ketika 400 dan 600 harus
+diambil terpisah), mengambil blok `unicode-range: U+0000-00FF`, dan menolak hasil yang bukan woff2
+sejati (magic bytes `wOF2`).
 
 Untuk menguji kamera dari HP, hasil build harus disajikan lewat HTTPS: `getUserMedia` dan OPFS
 dua-duanya diblokir di `http://<ip-laptop>`, jadi di sana shutter dan file picker hilang tanpa
@@ -47,28 +49,48 @@ berubah, sertifikat dibuat ulang otomatis saat server dinyalakan. Untuk memastik
 yang sedang disajikan, jalankan `node scripts/check-cert.mjs` sambil preview jalan — SAN-nya harus
 memuat IP yang kamu ketik di HP.
 
-Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang, ambil ulang dengan
-`node scripts/fetch-fonts.mjs`. Ikon pasang PNG digenerate dari geometri yang sama dengan
-`public/icons/app-icon.svg` oleh `npm run icons`.
+Dua hal yang perlu diketahui soal aset: woff2 variable di `public/fonts/` di-self-host (kalau hilang,
+ambil ulang dengan `node scripts/fetch-fonts.mjs`), dan ikon pasang PNG digenerate dari geometri yang
+sama dengan `public/icons/app-icon.svg` oleh `npm run icons` — jadi mengubah warna merek berarti
+menyunting SVG + script itu lalu menjalankan ulang keduanya.
+
+## Design 2 (branch ini)
+
+Branch `design-2` adalah percobaan bahasa visual yang menyalin endcap.design: kertas hangat
+(`#f8f7f3`), tinta hijau-hitam (`#181a17`), aksen biru `#2454df` plus lime `#dce87a`, hairline 1px,
+radius kartu 6px, Hanken Grotesk variable, dan eyebrow uppercase 10px ber-tracking di atas tiap
+judul. Navigasi bawah memakai ikon stroke-1.5 + label, bukan teks saja. `master` masih memegang
+arah "Cetak Swiss" lama; kedua branch bisa dibandingkan dengan `git checkout` lalu `npm run dev`.
+
+Yang TIDAK ikut berubah: geometri kartu (1080x1080, graysien 320px, penjaga `captionStack`),
+pipeline kamera, skema data, dan seluruh tes. Yang berubah di kartu hanya treatment caption —
+aturan lime dipersingkat jadi 96px, tanggal tidak lagi di-uppercase, dan hitungan minggu naik
+jadi pil aksen.
+
+Mode gelap didefinisikan di `src/tokens.css` (`prefers-color-scheme`) tapi belum pernah dilihat di
+layar; QA visualnya masih harus dilakukan manusia.
 
 ## Kenapa beberapa keputusan diambil
 
 - **Kartu dibekukan saat memotret.** Yang ikut tema hanya warna merek (aturan dan kotak minggu);
   teks di atas foto selalu putih di atas graysien gelap, karena kartunya dibaca orang lain, bukan
   hanya oleh HP yang memotret.
-- **Arah visual: "Cetak Swiss".** Radius nol, aturan 2px, label uppercase ber-tracking, oranye
-  `#E8540C` hanya untuk aturan/blok/angka besar — tidak pernah untuk teks kecil. Identitas hidup di
-  kartu foto, chrome-nya tetap netral.
-- **Font diambil dengan script, bukan unduh manual.** `npm run fonts` mengambil Public Sans 400 dan
-  600 sebagai dua permintaan terpisah; satu permintaan untuk dua weight membuat Google Fonts
-  mengembalikan file yang sama, dan seluruh teks semi-bold diam-diam jadi regular.
+- **Arah visual: kertas + tinta, aksen cuma satu.** Lihat bagian "Design 2" di atas. Aturan lama
+  "Cetak Swiss" (radius nol, aturan 2px, oranye `#E8540C` hanya untuk blok besar) masih hidup di
+  `master`. Oranye itu tidak pernah dipakai untuk teks kecil; di design 2 posisi yang sama diisi
+  biru `#2454df`, yang di atas kertas `#f8f7f3` dihitung ~5.7:1 sehingga boleh memuat teks 10px.
+- **Font diambil dengan script, bukan unduh manual.** `npm run fonts` mengambil satu woff2 variable
+  (400..800) sehingga kanvas bisa me-render 600 dan 800 dari satu berkas 34 KB; script menolak
+  respons yang bukan `wOF2`. Dulu 400 dan 600 harus dua permintaan terpisah, karena satu permintaan
+  untuk dua weight membuat Google Fonts mengembalikan file yang sama dan seluruh teks semi-bold
+  diam-diam jadi regular.
 - **Foto mentah dibuang.** Yang disimpan hanya kartu + thumbnail. Konsekuensinya crop tidak bisa
   diubah lagi, jadi jendela bidik menunjukkan persis 1:1 yang akan masuk.
 - **Streak mingguan pakai ambang 1 hari dari 7.** Angka itu di `src/config.ts` (`WEEK_THRESHOLD`),
   masih bisa diganti sebelum dipakai serius.
 - **Centang tanpa foto tetap setengah selesai.** Plan yang dicentang tanpa foto diberi tanda
-  berwarna oranye; ia tidak menghidupkan streak harian maupun mingguan. Hanya foto yang dihitung,
-  jadi "sibuk tapi tidak ada bukti" tidak bisa menyamar menjadi konsistensi.
+  berbingkai aksen (bukan kotak penuh); ia tidak menghidupkan streak harian maupun mingguan. Hanya
+  foto yang dihitung, jadi "sibuk tapi tidak ada bukti" tidak bisa menyamar menjadi konsistensi.
 - **Kalender tidak menampilkan thumbnail.** Kotak hari hanya berisi tanda (foto / centang tanpa
   foto / dilewati); detail plan, subplan, dan foto per plan muncul saat tanggalnya diketuk.
   Thumbnail 42 buah per bulan terlalu mahal untuk dibuka sekilas.
@@ -106,8 +128,8 @@ localhost), lalu:
    Row plan-nya berubah jadi "tercatat" dan jumlah fotonya ikut naik.
 5. Putar HP jadi landscape, lalu foto lagi: kartunya tetap 1080x1080 dan crop tidak boleh berpindah —
    orientasi tidak lagi memilih mode.
-6. Ketuk plan lain, pilih "Catat tanpa foto": tandanya jadi oranye "tanpa foto" dan streak tidak
-   bertambah. Tutup tab, buka lagi: status masih sama.
+6. Ketuk plan lain, pilih "Catat tanpa foto": tandanya berubah jadi berbingkai aksen "tanpa foto"
+   dan streak tidak bertambah. Tutup tab, buka lagi: status masih sama.
 7. Tekan "lewati" di baris yang sama: plan jadi "dilewati"; tekan lagi untuk membatalkan.
 8. Centang satu subplan, skip satu subplan, sisanya biarkan kosong.
 9. Tab **Kalender**: hari ini bertanda penuh, hari lain sesuai isinya. Ketuk sebuah tanggal: plan,

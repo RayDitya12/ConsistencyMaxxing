@@ -8,7 +8,7 @@ import { WEEKDAY_LABELS } from '../config'
 import { PhotoWall } from '../components/PhotoWall'
 import { Mark } from '../components/ChecklistStrip'
 import type { Check, Entry, Item } from '../db/types'
-import { Empty, Screen, TopBar } from '../components/ui'
+import { Button, Empty, Screen, TopBar } from '../components/ui'
 
 const NO_ITEMS = new Map<string, Item[]>()
 const NO_CHECKS = new Map<string, Check>()
@@ -36,7 +36,7 @@ export function CalendarScreen() {
     return () => document.removeEventListener('visibilitychange', sync)
   }, [])
 
-  if (!month) return <Screen><TopBar title="Kalender" /></Screen>
+  if (!month) return <Screen><TopBar eyebrow="Rekap" title="Kalender" /></Screen>
   return (
     <MonthGrid
       month={month}
@@ -74,14 +74,15 @@ function MonthGrid({
   return (
     <Screen>
       <TopBar
+        eyebrow="Rekap"
         title={label}
         right={
-          <span className="flex items-center gap-3">
-            <button type="button" onClick={() => onStep(-1)} className="touch-target px-1 text-[13px]" aria-label="bulan sebelumnya">
+          <span className="flex items-center gap-2">
+            <button type="button" onClick={() => onStep(-1)} className="touch-target rounded-card border px-2 text-[14px]" style={{ borderColor: 'var(--hairline)' }} aria-label="bulan sebelumnya">
               &lsaquo;
             </button>
-            <span className="num text-[12px] text-ink-2">{daysWithPhoto} hari</span>
-            <button type="button" onClick={() => onStep(1)} className="touch-target px-1 text-[13px]" aria-label="bulan berikutnya">
+            <span className="num eyebrow">{daysWithPhoto} hari</span>
+            <button type="button" onClick={() => onStep(1)} className="touch-target rounded-card border px-2 text-[14px]" style={{ borderColor: 'var(--hairline)' }} aria-label="bulan berikutnya">
               &rsaquo;
             </button>
           </span>
@@ -90,7 +91,7 @@ function MonthGrid({
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="grid grid-cols-7 gap-1 pb-1">
           {WEEKDAY_LABELS.map((w) => (
-            <span key={w} className="text-center text-[10px] uppercase tracking-[0.1em] text-ink-2">
+            <span key={w} className="eyebrow text-center">
               {w.slice(0, 3)}
             </span>
           ))}
@@ -110,21 +111,24 @@ function MonthGrid({
             ),
           )}
         </div>
-        <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] leading-relaxed text-ink-2">
-          <span className="flex items-center gap-2">
-            <Mark status="full" /> ada foto
-          </span>
-          <span className="flex items-center gap-2">
-            <Mark status="half" /> centang tanpa foto ({halfOnly})
-          </span>
-          <span className="flex items-center gap-2">
-            <Mark status="skip" /> semuanya dilewati
-          </span>
-        </p>
-        <p className="mt-2 text-[12px] leading-relaxed text-ink-2">
-          Kotak kosong bukan hari yang gagal, dan streak hanya dihitung dari hari berfoto. Ketuk satu tanggal untuk
-          melihat plan, subplan, dan fotonya.
-        </p>
+        <div className="mt-4 rounded-card border p-4" style={{ borderColor: 'var(--hairline)' }}>
+          <h2 className="eyebrow mb-3">Cara membaca kotak</h2>
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] leading-relaxed text-ink-2">
+            <span className="flex items-center gap-2">
+              <Mark status="full" /> ada foto
+            </span>
+            <span className="flex items-center gap-2">
+              <Mark status="half" /> centang tanpa foto ({halfOnly})
+            </span>
+            <span className="flex items-center gap-2">
+              <Mark status="skip" /> semuanya dilewati
+            </span>
+          </p>
+          <p className="mt-3 text-[13px] leading-relaxed text-ink-2">
+            Kotak kosong bukan hari yang gagal, dan streak hanya dihitung dari hari berfoto. Ketuk satu tanggal untuk
+            melihat plan, subplan, dan fotonya.
+          </p>
+        </div>
       </div>
       {open && <DaySheet date={open} onClose={() => setOpen(null)} />}
     </Screen>
@@ -148,15 +152,15 @@ function DayCell({
       type="button"
       onClick={onOpen}
       aria-label={`${formatLong(date)}: ${info ? READING[info.mark] : 'kosong'}${info && info.photos > 1 ? `, ${info.photos} foto` : ''}`}
-      className="flex aspect-square flex-col justify-between p-1"
+      className="flex aspect-square flex-col justify-between rounded-[5px] p-1"
       style={{
-        border: isToday ? '2px solid var(--accent)' : '1px solid var(--hairline)',
-        background: status === 'full' ? 'var(--surface-2)' : 'transparent',
+        border: isToday ? '1.5px solid var(--accent)' : '1px solid var(--hairline)',
+        background: status === 'full' ? 'var(--surface-2)' : 'var(--raised)',
       }}
     >
       <span className="flex items-baseline justify-between">
-        <span className="num text-[12px] font-semibold">{Number(date.slice(8))}</span>
-        {info && info.photos > 0 && <span className="num text-[10px] leading-none text-ink-2">{info.photos}</span>}
+        <span className="num text-[13px] font-bold tracking-[-0.02em]">{Number(date.slice(8))}</span>
+        {info && info.photos > 0 && <span className="num eyebrow">{info.photos}</span>}
       </span>
       <Mark status={status} />
     </button>
@@ -181,11 +185,14 @@ function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto p-4" style={{ background: 'var(--surface)' }}>
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-5 pb-8">
-        <div className="flex items-baseline justify-between border-b-2 pb-2" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="text-[15px] font-semibold">{formatLong(date)}</h2>
-          <button type="button" onClick={onClose} className="touch-target px-2 text-[12px] uppercase tracking-[0.14em]">
-            tutup
-          </button>
+        <div className="flex items-end justify-between border-b pb-2" style={{ borderColor: 'var(--hairline)' }}>
+          <div>
+            <span className="eyebrow block">Arsip hari</span>
+            <h2 className="text-[20px] font-bold leading-tight">{formatLong(date)}</h2>
+          </div>
+          <Button className="text-[12px]" onClick={onClose}>
+            Tutup
+          </Button>
         </div>
         {plans.length === 0 && media.length === 0 && !dayEntry?.note && (
           <Empty>Hari itu tidak punya plan maupun foto. Kalau memang hari kosong, biarkan kosong.</Empty>
@@ -205,15 +212,15 @@ function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
                   {plan.name}
                 </span>
               </Heading>
-              <p className="mb-2 text-[12px] uppercase tracking-[0.12em] text-ink-2">
+              <p className="eyebrow mb-2">
                 {READING[status?.state ?? 'open']}
                 {status && status.photos > 0 ? ` · ${status.photos} foto` : ''}
                 {list.length > 0 ? ` · subplan ${cov.done}/${cov.total}` : ''}
               </p>
               {list.length > 0 && (
-                <ul className="flex flex-col">
+                <ul className="flex flex-col gap-1">
                   {list.map((it) => (
-                    <li key={it.id} className="flex items-center gap-3 border-b py-2" style={{ borderColor: 'var(--hairline)' }}>
+                    <li key={it.id} className="flex items-center gap-3 py-1">
                       <Mark status={subStatuses.get(it.id) ?? ''} />
                       <span className="flex-1 text-[15px]">{it.label}</span>
                     </li>
@@ -230,19 +237,19 @@ function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
         })}
         {strayPhotos.length > 0 && (
           <div>
-            <Heading>Foto lain pada hari itu</Heading>
+            <SubHeading>Foto lain pada hari itu</SubHeading>
             <PhotoWall records={strayPhotos} />
           </div>
         )}
         {dayPhotos.length > 0 && (
           <div>
-            <Heading>Level hari</Heading>
+            <SubHeading>Level hari</SubHeading>
             <PhotoWall records={dayPhotos} />
           </div>
         )}
         {dayEntry?.note && (
           <div>
-            <Heading>Catatan</Heading>
+            <SubHeading>Catatan</SubHeading>
             <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{dayEntry.note}</p>
           </div>
         )}
@@ -252,7 +259,9 @@ function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
 }
 
 function Heading({ children }: { children: ReactNode }) {
-  return (
-    <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-2">{children}</h3>
-  )
+  return <h3 className="mb-1 flex items-center gap-2 text-[16px] font-bold tracking-[-0.02em]">{children}</h3>
+}
+
+function SubHeading({ children }: { children: ReactNode }) {
+  return <h3 className="eyebrow mb-2">{children}</h3>
 }

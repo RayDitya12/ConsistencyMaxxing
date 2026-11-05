@@ -6,21 +6,21 @@ import type { Palette } from '../theme/palette'
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
 
-/** Grid cetak: satu margin, satu aturan, satu baseline. Semua angka diukur dari tepi kartu, jadi
- * mengubah tampilan kartu tidak pernah menyentuh kode capture. */
+/** Kartu design 2: satu garis stabilo, satu judul berat yang rapat, satu baris eyebrow. Semua
+ * angka diukur dari tepi kartu, jadi mengubah tampilan kartu tidak pernah menyentuh kode capture. */
 const MARGIN = 72
-const RULE_H = 10
-const GAP_RULE = 26
-const GAP_META = 14
-const H = { date: 92, meta: 40 }
+const RULE_H = 8
+const GAP_RULE = 24
+const GAP_META = 16
+const H = { date: 88, meta: 36 }
 
-const TYPE = { date: '600 78px', meta: '400 30px', week: '600 46px' }
-const TRACK_META = '0.14em'
+const TYPE = { date: '800 76px', meta: '600 26px', week: '800 44px' }
+const TRACK_DATE = '-0.03em'
+const TRACK_META = '0.09em'
 
 /** Kartu adalah artefak yang dibakar permanen: teks di atas foto selalu terang di atas graysien
  * gelap, apa pun tema viewer. Hanya warna merek yang ikut palet. */
-const ON_PHOTO = { ink: '#ffffff', ink2: 'rgba(255,255,255,0.82)' }
-const CHIP_INK = '#111111'
+const ON_PHOTO = { ink: '#ffffff', ink2: 'rgba(255,255,255,0.78)' }
 
 export interface DrawOptions {
   pan?: { x: number; y: number }
@@ -79,12 +79,15 @@ function drawCaption(ctx: Ctx, caption: Caption, layout: CardLayout, p: Palette)
   ctx.textBaseline = 'top'
 
   if (caption.headline) {
-    ctx.fillStyle = p.accent
-    ctx.fillRect(MARGIN, y, width, RULE_H)
+    // Stabilo pendek, bukan garis selebar kartu: penanda, bukan pembatas.
+    ctx.fillStyle = p.acid
+    ctx.fillRect(MARGIN, y, 96, RULE_H)
     y += RULE_H + GAP_RULE
     ctx.font = font(TYPE.date)
     ctx.fillStyle = ON_PHOTO.ink
-    ctx.fillText(caption.headline.toUpperCase(), MARGIN, y)
+    setTracking(ctx, TRACK_DATE)
+    ctx.fillText(caption.headline, MARGIN, y)
+    setTracking(ctx, '0em')
     if (caption.week) drawWeekBox(ctx, caption.week, right, y, p)
     y += H.date
   }
@@ -112,15 +115,26 @@ function setTracking(ctx: Ctx, value: string) {
   if ('letterSpacing' in withTracking) withTracking.letterSpacing = value
 }
 
-/** Kotak minggu: blok aksen solid seukuran baris tanggal, rata kanan dari lebar angkanya sendiri. */
+/** Kotak minggu: pil aksen seukuran baris tanggal, rata kanan dari lebar angkanya sendiri. */
 function drawWeekBox(ctx: Ctx, text: string, right: number, y: number, p: Palette) {
   ctx.font = font(TYPE.week)
-  const w = Math.max(132, ctx.measureText(text).width + 48)
+  setTracking(ctx, TRACK_DATE)
+  const w = Math.max(120, ctx.measureText(text).width + 44)
   const x = right - w
   ctx.fillStyle = p.accent
-  ctx.fillRect(x, y, w, H.date)
-  ctx.fillStyle = CHIP_INK
-  ctx.fillText(text, x + 24, y + 22)
+  roundRect(ctx, x, y, w, H.date, 8)
+  ctx.fill()
+  ctx.fillStyle = p.accentInk
+  ctx.fillText(text, x + 22, y + 12)
+  setTracking(ctx, '0em')
+}
+
+/** roundRect baru ada di browser terbaru; kartu tanpa sudut bulat tetap kartu yang benar. */
+function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number) {
+  const shaped = ctx as { roundRect?: (x: number, y: number, w: number, h: number, r: number) => void }
+  ctx.beginPath()
+  if (typeof shaped.roundRect === 'function') shaped.roundRect(x, y, w, h, r)
+  else ctx.rect(x, y, w, h)
 }
 
 /** Sisi terpanjang yang dipertahankan; tinggi mengikuti rasio kartu supaya thumbnail tidak gepeng. */

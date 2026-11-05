@@ -20,9 +20,9 @@ import { Button, Screen, Section, Streak, TopBar } from '../components/ui'
 
 function Row({ label, value, warn = false }: { label: string; value: string; warn?: boolean }) {
   return (
-    <div className="flex items-center justify-between border-b py-2" style={{ borderColor: 'var(--hairline)' }}>
-      <span className="text-[12px] uppercase tracking-[0.14em] text-ink-2">{label}</span>
-      <span className="num text-[14px]" style={warn ? { color: 'var(--danger)' } : undefined}>
+    <div className="flex items-baseline justify-between gap-4 border-b py-2 last:border-b-0" style={{ borderColor: 'var(--hairline)' }}>
+      <span className="eyebrow">{label}</span>
+      <span className="num text-[14px] font-bold tracking-[-0.02em]" style={warn ? { color: 'var(--danger)' } : undefined}>
         {value}
       </span>
     </div>
@@ -73,15 +73,16 @@ function SummaryView({ onOpenSettings }: { onOpenSettings: () => void }) {
   return (
     <Screen>
       <TopBar
+        eyebrow="Akun lokal"
         title="Profil"
         right={
-          <Button className="text-[11px] uppercase" onClick={onOpenSettings}>
+          <Button className="text-[12px]" onClick={onOpenSettings}>
             Pengaturan
           </Button>
         }
       />
       <div className="flex-1 overflow-y-auto">
-        <div className="flex items-end justify-between border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
+        <div className="flex items-end gap-6 border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
           <Streak value={logged ? weeklyStreak(logged, today, WEEK_THRESHOLD) : 0} unit={`minggu (${WEEK_THRESHOLD}/7)`} big />
           <Streak value={logged ? dailyStreak(logged, today) : 0} unit="hari berfoto" />
         </div>
@@ -134,9 +135,10 @@ function SettingsView({ onBack }: { onBack: () => void }) {
     return (
       <Screen>
         <TopBar
+          eyebrow="Profil"
           title="Pengaturan"
           right={
-            <Button className="text-[11px] uppercase" onClick={onBack}>
+            <Button className="text-[12px]" onClick={onBack}>
               Profil
             </Button>
           }
@@ -222,13 +224,14 @@ function SettingsView({ onBack }: { onBack: () => void }) {
   return (
     <Screen>
       <TopBar
+        eyebrow="Profil"
         title="Pengaturan"
         right={
           <span className="flex items-center gap-2">
-            <Button className="text-[11px] uppercase" onClick={() => void bootstrap()}>
+            <Button className="text-[12px]" onClick={() => void bootstrap()}>
               Periksa ulang
             </Button>
-            <Button className="text-[11px] uppercase" onClick={onBack}>
+            <Button className="text-[12px]" onClick={onBack}>
               Profil
             </Button>
           </span>
@@ -309,14 +312,12 @@ function SettingsView({ onBack }: { onBack: () => void }) {
                 </Button>
               </div>
               <label className="block">
-                <span className="mb-1 block text-[11px] uppercase tracking-[0.14em] text-ink-2">
-                  Ketik GANTI untuk menimpa perangkat ini
-                </span>
+                <span className="eyebrow mb-1 block">Ketik GANTI untuk menimpa perangkat ini</span>
                 <input
                   value={word}
                   onChange={(e) => setWord(e.target.value)}
-                  className="touch-target w-full border-b-2 bg-transparent px-0 py-2 text-[16px] outline-none"
-                  style={{ borderColor: 'var(--line)' }}
+                  className="touch-target w-full rounded-card border bg-transparent px-3 py-2 text-[16px] outline-none"
+                  style={{ borderColor: 'var(--hairline)' }}
                 />
               </label>
             </div>
@@ -332,20 +333,21 @@ function SettingsView({ onBack }: { onBack: () => void }) {
             Hapus semuanya
           </Button>
           <label className="mt-3 block">
-            <span className="mb-1 block text-[11px] uppercase tracking-[0.14em] text-ink-2">
-              Ketik HAPUS untuk menyetujui
-            </span>
+            <span className="eyebrow mb-1 block">Ketik HAPUS untuk menyetujui</span>
             <input
               value={wipeWord}
               onChange={(e) => setWipeWord(e.target.value)}
-              className="touch-target w-full border-b-2 bg-transparent px-0 py-2 text-[16px] outline-none"
-              style={{ borderColor: 'var(--line)' }}
+              className="touch-target w-full rounded-card border bg-transparent px-3 py-2 text-[16px] outline-none"
+              style={{ borderColor: 'var(--hairline)' }}
             />
           </label>
         </Section>
 
         {message && (
-          <div className="border-t-2 px-4 py-3 text-[13px] leading-relaxed" style={{ borderColor: 'var(--line)' }}>
+          <div
+            className="mx-4 my-3 rounded-card border p-4 text-[13px] leading-relaxed"
+            style={{ borderColor: 'var(--hairline)', background: 'var(--accent-soft)' }}
+          >
             {message}
           </div>
         )}

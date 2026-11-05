@@ -1,29 +1,29 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
 
 export function Screen({ children }: { children: ReactNode }) {
-  return <div className="mx-auto flex h-full max-w-[520px] flex-col">{children}</div>
+  return <div className="mx-auto flex h-full w-full max-w-[520px] flex-col">{children}</div>
 }
 
-export function TopBar({ title, right }: { title: string; right?: ReactNode }) {
+/** Kontras ukuran: eyebrow kecil yang lebar di atas judul berat yang ketat. */
+export function TopBar({ eyebrow, title, right }: { eyebrow?: string; title: string; right?: ReactNode }) {
   return (
-    <header
-      className="flex items-center justify-between border-b-2 px-4 py-3"
-      style={{ borderColor: 'var(--line)' }}
-    >
-      <h1 className="text-[13px] font-semibold uppercase tracking-[0.12em]">{title}</h1>
-      {right}
+    <header className="flex items-end justify-between gap-3 border-b px-4 pb-3 pt-4" style={{ borderColor: 'var(--hairline)' }}>
+      <div className="min-w-0">
+        {eyebrow && <span className="eyebrow block">{eyebrow}</span>}
+        <h1 className="truncate text-[21px] font-bold leading-[1.15]">{title}</h1>
+      </div>
+      {right && <div className="shrink-0 pb-1">{right}</div>}
     </header>
   )
 }
 
 export function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section className="border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
-      <h2 className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-2">
-        <span className="block h-[10px] w-[3px]" style={{ background: 'var(--accent)' }} />
-        {label}
-      </h2>
-      {children}
+    <section className="px-4 py-3">
+      <h2 className="eyebrow mb-2">{label}</h2>
+      <div className="rounded-card border bg-raised p-4" style={{ borderColor: 'var(--hairline)' }}>
+        {children}
+      </div>
     </section>
   )
 }
@@ -36,11 +36,11 @@ export function Button({ variant = 'ghost', className = '', style, ...rest }: Bu
       ? { background: 'var(--ink)', color: 'var(--surface)' }
       : variant === 'accent'
         ? { background: 'var(--accent)', color: 'var(--accent-ink)' }
-        : { background: 'transparent', color: 'var(--ink)', border: '2px solid var(--line)' }
+        : { background: 'var(--surface)', color: 'var(--ink)', border: '1.5px solid var(--hairline)' }
   return (
     <button
       {...rest}
-      className={`touch-target px-4 text-[13px] font-semibold uppercase tracking-[0.08em] active:opacity-70 disabled:opacity-40 ${className}`}
+      className={`touch-target rounded-card px-4 text-[14px] font-bold tracking-[-0.01em] transition active:translate-y-px active:opacity-80 disabled:opacity-40 ${className}`}
       style={{ ...look, ...style }}
     />
   )
@@ -49,11 +49,11 @@ export function Button({ variant = 'ghost', className = '', style, ...rest }: Bu
 export function Field({ label, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[11px] uppercase tracking-[0.14em] text-ink-2">{label}</span>
+      <span className="eyebrow mb-1 block">{label}</span>
       <input
         {...rest}
-        className="touch-target w-full border-b-2 bg-transparent px-0 py-2 text-[16px] outline-none"
-        style={{ borderColor: 'var(--line)' }}
+        className="touch-target w-full rounded-card border bg-transparent px-3 py-2 text-[16px] outline-none"
+        style={{ borderColor: 'var(--hairline)' }}
       />
     </label>
   )
@@ -61,18 +61,20 @@ export function Field({ label, ...rest }: InputHTMLAttributes<HTMLInputElement> 
 
 export function Streak({ value, unit, big = false }: { value: number; unit: string; big?: boolean }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <span
-        className={`num font-semibold ${big ? 'text-[44px] leading-[1.05]' : 'text-[22px] leading-none'}`}
-        style={big ? { borderBottom: '4px solid var(--accent)', paddingBottom: 2 } : undefined}
-      >
-        {value}
-      </span>
-      <span className="text-[11px] uppercase tracking-[0.14em] text-ink-2">{unit}</span>
+    <div className="flex items-end gap-2">
+      <div className="flex flex-col items-start gap-1">
+        {big && <span className="block h-[6px] w-8" style={{ background: 'var(--accent)' }} />}
+        <span
+          className={`num font-bold tracking-[-0.045em] ${big ? 'text-[46px] leading-[0.9]' : 'text-[24px] leading-none'}`}
+        >
+          {value}
+        </span>
+      </div>
+      <span className="eyebrow pb-1">{unit}</span>
     </div>
   )
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-6 text-[14px] leading-relaxed text-ink-2">{children}</p>
+  return <p className="py-4 text-[14px] leading-relaxed text-ink-2">{children}</p>
 }

@@ -1,6 +1,8 @@
-export const FONT_FAMILY = 'Public Sans'
+export const FONT_FAMILY = 'Hanken Grotesk'
 
-const SIZES = ['400 78px', '400 30px', '400 46px', '600 78px', '600 30px', '600 46px']
+/** Bobot yang benar-benar digambar ke kartu. Font ini variable (400..800), jadi tiap angka di
+ * bawah adalah sumbu berat yang harus diminta ke document.fonts sebelum rana boleh hidup. */
+const SIZES = ['800 76px', '600 26px', '800 44px']
 
 export function font(spec: string): string {
   return `${spec} "${FONT_FAMILY}", system-ui, sans-serif`
