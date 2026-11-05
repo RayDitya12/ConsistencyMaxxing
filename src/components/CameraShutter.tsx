@@ -10,6 +10,7 @@ import {
   type Facing,
   type OpenedCamera,
 } from '../capture/viewfinder'
+import { announceSaved } from '../lib/saved'
 import { ensureEntry } from '../db/queries'
 import { storeMedia } from '../storage/vault'
 import { Button } from './ui'
@@ -93,6 +94,7 @@ export function CameraShutter({ dateKey, planId, planLabel }: Props) {
         height: card.height,
         caption: card.caption,
       })
+      announceSaved()
     } catch (err) {
       setProblem((err as Error).message)
       setStage('error')

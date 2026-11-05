@@ -21,6 +21,7 @@ import { useBoot } from '../storage/useBoot'
 import { CameraShutter } from '../components/CameraShutter'
 import { ChecklistStrip, Mark } from '../components/ChecklistStrip'
 import { PhotoWall } from '../components/PhotoWall'
+import { announceSaved } from '../lib/saved'
 import { Button, Empty, Screen, Section, Streak, TopBar } from '../components/ui'
 
 const NO_CHECKS = new Map<string, Check>()
@@ -150,6 +151,11 @@ function PlanRow({
   checks: Map<string, Check>
   onOpen: () => void
 }) {
+  const finish = async () => {
+    await setEntryStatus(date, planId, status === 'half' ? null : 'done')
+    announceSaved()
+  }
+
   return (
     <li className="border-b px-4" style={{ borderColor: 'var(--hairline)' }}>
       <div className="flex items-center gap-2">
@@ -161,19 +167,36 @@ function PlanRow({
             {photos > 0 ? ` · ${photos}` : ''}
           </span>
         </button>
-        <button
-          type="button"
-          aria-label={`${name}: ${skipped ? 'batalkan lewati' : 'lewati hari ini'}`}
-          onClick={() => void setEntryStatus(date, planId, skipped ? null : 'skip')}
-          className="touch-target shrink-0 px-2 text-[11px] uppercase tracking-[0.12em]"
-          style={
-            skipped
-              ? { background: 'var(--ink)', color: 'var(--surface)' }
-              : { border: '2px solid var(--hairline)', color: 'var(--ink-2)' }
-          }
-        >
-          lewati
-        </button>
+        <div className="flex shrink-0 gap-1">
+          {status !== 'full' && (
+            <button
+              type="button"
+              aria-label={`${name}: ${status === 'half' ? 'batalkan selesai' : 'tandai selesai tanpa foto'}`}
+              onClick={() => void finish()}
+              className="touch-target px-2 text-[11px] uppercase tracking-[0.12em]"
+              style={
+                status === 'half'
+                  ? { background: 'var(--accent)', color: 'var(--accent-ink)' }
+                  : { border: '2px solid var(--hairline)', color: 'var(--ink-2)' }
+              }
+            >
+              selesai
+            </button>
+          )}
+          <button
+            type="button"
+            aria-label={`${name}: ${skipped ? 'batalkan lewati' : 'lewati hari ini'}`}
+            onClick={() => void setEntryStatus(date, planId, skipped ? null : 'skip')}
+            className="touch-target px-2 text-[11px] uppercase tracking-[0.12em]"
+            style={
+              skipped
+                ? { background: 'var(--ink)', color: 'var(--surface)' }
+                : { border: '2px solid var(--hairline)', color: 'var(--ink-2)' }
+            }
+          >
+            lewati
+          </button>
+        </div>
       </div>
       {items.length > 0 && (
         <div className="pb-3">
@@ -230,15 +253,17 @@ function PlanSheet({
           <Button
             onClick={async () => {
               await setEntryStatus(date, planId, 'done')
+              announceSaved()
               onClose()
             }}
           >
-            Catat tanpa foto
+            Selesai tanpa foto
           </Button>
           {state === 'half' && (
             <Button
               onClick={async () => {
                 await setEntryStatus(date, planId, null)
+                announceSaved('Centang dicabut')
                 onClose()
               }}
             >

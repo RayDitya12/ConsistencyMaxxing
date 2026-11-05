@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SavedToast } from './components/SavedToast'
 import { PlanScreen } from './screens/PlanScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { TodayScreen } from './screens/TodayScreen'
@@ -45,6 +46,7 @@ export default function App() {
           <ProfileScreen />
         )}
       </div>
+      <SavedToast />
       <nav
         className="flex border-t-2 safe-bottom"
         style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}

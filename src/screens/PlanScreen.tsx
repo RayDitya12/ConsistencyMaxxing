@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { announceSaved } from '../lib/saved'
 import { Button, Empty, Field, Screen, Section, TopBar } from '../components/ui'
 import {
   addSubplan,
@@ -138,6 +139,14 @@ function PlanCard({ plan }: { plan: Plan }) {
     setTimeout(() => setConfirming(false), 4000)
   }
 
+  // Nama subplan baru ditulis saat field kehilangan fokus, jadi ketuk Simpan lebih dulu
+  // masih menyimpan ketikan yang belum selesai.
+  const save = () => {
+    const active = document.activeElement
+    if (active instanceof HTMLElement) active.blur()
+    announceSaved()
+  }
+
   return (
     <section className="border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
       <input
@@ -152,13 +161,18 @@ function PlanCard({ plan }: { plan: Plan }) {
       <div className="mt-4">
         <SubplanList planId={plan.id} />
       </div>
-      <Button
-        className="mt-4 w-full"
-        onClick={remove}
-        style={confirming ? { background: 'var(--danger)', color: 'var(--surface)', borderColor: 'var(--danger)' } : undefined}
-      >
-        {confirming ? 'Ketuk lagi untuk menghapus' : 'Hapus rencana ini'}
-      </Button>
+      <div className="mt-4 flex gap-2">
+        <Button variant="accent" className="flex-1" onClick={save}>
+          Simpan plan
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={remove}
+          style={confirming ? { background: 'var(--danger)', color: 'var(--surface)', borderColor: 'var(--danger)' } : undefined}
+        >
+          {confirming ? 'Ketuk lagi untuk menghapus' : 'Hapus rencana'}
+        </Button>
+      </div>
     </section>
   )
 }
@@ -195,7 +209,14 @@ function SubplanList({ planId }: { planId: string }) {
           </li>
         ))}
       </ul>
-      <div className="mt-2 flex gap-2">
+      <form
+        className="mt-2 flex gap-2"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          const added = await addSubplan(planId, draft)
+          if (added) setDraft('')
+        }}
+      >
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -203,16 +224,10 @@ function SubplanList({ planId }: { planId: string }) {
           className="touch-target min-w-0 flex-1 border-b-2 bg-transparent py-1 text-[16px] outline-none"
           style={{ borderColor: 'var(--hairline)' }}
         />
-        <Button
-          onClick={async () => {
-            await addSubplan(planId, draft)
-            setDraft('')
-          }}
-          disabled={draft.trim().length === 0}
-        >
+        <Button type="submit" disabled={draft.trim().length === 0}>
           Tambah
         </Button>
-      </div>
+      </form>
     </div>
   )
 }
