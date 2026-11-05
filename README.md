@@ -1,9 +1,11 @@
 # ConsistencyMaxxing
 
-Catat konsistensi terhadap rencana harianmu sendiri. Ketuk satu plan di **Hari ini**, kamera
-terbuka, satu foto menutup plan itu; kartunya (1080x1350 atau 1350x1080, tanggal tercetak di
-bawah) yang disimpan, bukan foto mentah. Plan yang dicentang tanpa foto tercatat sebagai setengah
-selesai dan tidak menghidupkan streak.
+Catat konsistensi terhadap rencana harianmu sendiri. Rencana ditulis tangan di tab **Plan**: satu
+nama, lalu hari-hari ia muncul (toggle tujuh hari), plus subplan yang boleh kamu isi per sesi. Tidak
+ada parser pola, tidak ada yang auto-generate. Ketuk satu plan di **Hari ini**, kamera terbuka, satu
+foto menutup plan itu; kartunya (1080x1350 atau 1350x1080, tanggal tercetak di bawah) yang disimpan,
+bukan foto mentah. Plan yang dicentang tanpa foto tercatat sebagai setengah selesai dan tidak
+menghidupkan streak. Hari yang tidak punya plan memang kosong — kamera tidak menawarkan diri.
 
 Semua data hidup di perangkat: Dexie (IndexedDB) untuk baris, OPFS untuk file gambar. Tidak ada
 server, tidak ada akun, tidak ada sinkronisasi. Salinanmu hanya file `.cmx.zip` yang kamu ekspor
@@ -14,7 +16,7 @@ sendiri.
 ```
 npm install
 npm run dev        # http://localhost:5173
-npm test           # vitest, 54 test
+npm test           # vitest, 65 test
 npm run lint       # oxlint
 npm run build         # dist/ + service worker
 npm run preview       # sajikan hasil build, cek mode offline di sini
@@ -61,6 +63,12 @@ Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang
 - **Izin simpan permanen diminta lewat tombol.** `persist()` otomatis saat boot membuat Chrome
   menjadwalkan masa tunggu setelah satu penolakan, sehingga permintaan berikutnya bisa mati
   berhari-hari. Tombolnya ada di Profil -> Pengaturan.
+- **Plan ditulis tangan, bukan hasil generate.** Aplikasi ini berangkat kosong; satu plan cuma nama
+  plus hari-hari ia muncul. Pola tujuh huruf (`ULURULR`) dulu jadi model data, sekarang hanya
+  contoh yang bisa diketuk sekali di tab Plan. Alasannya: tracker yang memaksa bentuk jadwal tertentu
+  akan dibuang begitu jadwal aslinya berbeda.
+- **Kamera tinggal di dalam plan.** Shutter hanya muncul setelah plan hari itu diketuk, jadi ia
+  requirement untuk mencentang, bukan fitur melayang tanpa fungsi.
 - **Kamera utama, galeri selalu bisa dipilih.** Tombol rana adalah aksi utamanya, tapi "pilih dari
   galeri" ikut tampil di semua keadaan (diam, bidik, maupun gagal), bukan hanya sebagai hadiah
   setelah kamera menolak. Foto dari galeri ditandai `source: 'fallback'` supaya bedanya masih bisa
@@ -73,13 +81,15 @@ Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang
 Jalankan preview lewat HTTPS seperti di atas, buka dari HP satu jaringan (alamat IP laptop, bukan
 localhost), lalu:
 
-1. Tambah rencana di tab **Plan**, pola `ULURULR`, checklist minimal satu baris. Simpan.
-2. Tab **Hari ini**: daftar plan hari itu muncul, semuanya masih "belum". Kamera belum menyala
-   sebelum ada plan yang diketuk — itu memang desainnya.
-3. Ketuk satu plan: kamera harus langsung diminta. "pilih dari galeri" harus terlihat di keadaan
-   apa pun — sebelum kamera menyala, saat jendela bidik aktif, dan saat izin ditolak. Kalau kamera
-   tidak mau menyala sama sekali, ulangi lewat tombol "Buka kamera"; kamera dan OPFS dua-duanya
-   butuh HTTPS.
+1. Tab **Plan**: ketuk "+ Tambah rencana", tulis satu nama, nyalakan toggle harinya (misalnya
+   Senin untuk "Belajar NLP"), simpan, lalu tambahkan minimal satu subplan. Rencana harus langsung
+   muncul di daftar. Kalau mau cepat, pakai tombol contoh Workout — Upper keluar Senin/Rabu/Jumat,
+   Lower Selasa/Sabtu.
+2. Tab **Hari ini**: hanya plan yang hari itu aktif yang muncul. Hari tanpa plan harus berisi satu
+   baris teks saja — tidak ada shutter, tidak ada kamera yang menggantung.
+3. Ketuk satu plan: kamera langsung diminta. Ikon "pilih dari galeri" harus terlihat di keadaan apa
+   pun — sebelum kamera menyala, saat jendela bidik aktif, dan saat izin ditolak. Kalau kamera tidak
+   mau menyala sama sekali, ada tombol "Coba lagi"; kamera dan OPFS dua-duanya butuh HTTPS.
 4. Foto satu: cek kartu yang muncul identik dengan jendela bidik, tanggal benar, tidak mirror.
    Row plan-nya berubah jadi "tercatat" dan jumlah fotonya ikut naik.
 5. Putar HP jadi landscape, foto lagi: jendela crop tidak boleh bergeser, kartu jadi 1350x1080.
@@ -111,7 +121,7 @@ localhost), lalu:
 src/capture/    jendela bidik, layout kartu, renderer, caption
 src/db/         skema Dexie + query + metrik turunan (streak, coverage)
 src/export/     arsip .cmx.zip: bangun, baca, gabungkan, ganti
-src/plan/       pola tujuh hari, aksi template/slot/checklist
+src/plan/       aksi plan/subplan (toggle hari, contoh Workout)
 src/screens/    Hari ini, Kalender, Plan, Profil (di dalamnya ada Pengaturan)
 src/storage/    OPFS, kapasitas, bootstrap, sapu file yatim
 test/           vitest + fake-indexeddb (pipeline gambar diuji tanpa kamera)

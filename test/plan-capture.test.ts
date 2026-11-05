@@ -1,43 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { describePattern, parseWeeklyPattern } from '../src/plan/pattern'
 import { buildFileName, extensionFor, mediaPath, sanitizeLabel, thumbPath } from '../src/lib/filename'
 import { computeLayout, coverRect } from '../src/capture/layout'
 import { buildCaption, truncate, wrapLines } from '../src/capture/caption'
 import { thumbSize } from '../src/capture/card'
 import { CAPTION_FIELDS } from '../src/capture/caption'
-
-describe('pola mingguan', () => {
-  it('memecah ULURUR jadi tujuh kunci dan huruf unik jadi satu slot', () => {
-    const parsed = parseWeeklyPattern('ULURULR')
-    expect(parsed.ok).toBe(true)
-    if (!parsed.ok) return
-    expect(parsed.keys).toEqual(['U', 'L', 'U', 'R', 'U', 'L', 'R'])
-    expect(parsed.distinct).toEqual(['U', 'L', 'R'])
-  })
-
-  it('menerima spasi dan huruf kecil', () => {
-    const parsed = parseWeeklyPattern('u l u r u l r')
-    expect(parsed.ok).toBe(true)
-  })
-
-  it('menolak panjang bukan tujuh dengan pesan yang menjelaskan', () => {
-    const parsed = parseWeeklyPattern('ULU')
-    expect(parsed.ok).toBe(false)
-    if (parsed.ok) return
-    expect(parsed.error).toContain('7 huruf')
-  })
-
-  it('menolak karakter asing', () => {
-    expect(parseWeeklyPattern('ULU-RULR').ok).toBe(false)
-    expect(parseWeeklyPattern('').ok).toBe(false)
-  })
-
-  it('menggambarkan pola dengan nama slot asli', () => {
-    expect(describePattern(['U', 'L', 'U', 'R', 'U', 'L', 'R'], { U: 'Upper', L: 'Lower', R: 'Rest' })).toContain(
-      'Sen Upper',
-    )
-  })
-})
 
 describe('nama file sebagai metadata yang manusiawi', () => {
   it('membuang karakter ilegal path dan emoji', () => {
@@ -112,7 +78,7 @@ describe('geometri kartu', () => {
 
 describe('caption kartu', () => {
   it('fase ini hanya tanggal yang dicetak', () => {
-    const c = buildCaption({ dateKey: '2026-11-05', slotLabel: 'Upper', weekStreak: 14, dailyStreak: 3 })
+    const c = buildCaption({ dateKey: '2026-11-05', planLabel: 'Workout · Upper', weekStreak: 14, dailyStreak: 3 })
     expect(c.headline).toBe('Kam 05.11.26')
     expect(c.slot).toBeNull()
     expect(c.week).toBeNull()

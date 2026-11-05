@@ -1,28 +1,15 @@
-export type SlotKind = 'active' | 'rest'
-
-export interface Template {
+/** Plan yang ditulis sendiri oleh user: satu nama, dan hari-hari ia muncul. */
+export interface Plan {
   id: string
   name: string
-  domain: 'workout' | 'study' | 'skill' | 'custom'
-  /** tujuh kunci slot, indeks 0 = Senin */
-  pattern: string[]
-  color: string
+  /** indeks hari, 0 = Senin. Hari yang tidak dipilih berarti plan ini tidak ada di situ. */
+  days: number[]
   createdAt: number
-  archivedAt: number | null
-}
-
-export interface Slot {
-  id: string
-  templateId: string
-  key: string
-  name: string
-  kind: SlotKind
-  note: string
 }
 
 export interface Item {
   id: string
-  slotId: string
+  planId: string
   label: string
   order: number
 }
@@ -30,8 +17,8 @@ export interface Item {
 export interface Entry {
   id: string
   date: string
-  /** null untuk bukti level hari (hari Rest tetap boleh ada foto) */
-  slotId: string | null
+  /** null untuk bukti level hari, dipakai oleh foto yang tidak menempel pada plan apa pun */
+  planId: string | null
   /** status keputusan pada satu plan hari ini. Entri foto tidak membutuhkannya. */
   status: CheckStatus | null
   note: string

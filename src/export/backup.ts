@@ -2,7 +2,7 @@ import { strFromU8, strToU8, unzipSync, zip } from 'fflate'
 import { APP_NAME, SCHEMA_VERSION } from '../config'
 import { db } from '../db/db'
 import { getBackend } from '../storage/backend'
-import type { Check, Entry, Item, MediaRecord, Slot, Template } from '../db/types'
+import type { Check, Entry, Item, MediaRecord, Plan } from '../db/types'
 
 const MANIFEST = 'manifest.json'
 const DATA = 'data.json'
@@ -12,12 +12,11 @@ export interface Manifest {
   schemaVersion: number
   year: string
   exportedAt: number
-  counts: Record<'templates' | 'slots' | 'items' | 'entries' | 'checks' | 'media', number>
+  counts: Record<'plans' | 'items' | 'entries' | 'checks' | 'media', number>
 }
 
 export interface BackupData {
-  templates: Template[]
-  slots: Slot[]
+  plans: Plan[]
   items: Item[]
   entries: Entry[]
   checks: Check[]
@@ -56,9 +55,8 @@ function toBytes(blob: Blob): Promise<Uint8Array> {
 }
 
 export async function buildYearArchive(year: string): Promise<ArchiveResult> {
-  const [templates, slots, items, allEntries, allChecks, allMedia] = await Promise.all([
-    db.templates.toArray(),
-    db.slots.toArray(),
+  const [plans, items, allEntries, allChecks, allMedia] = await Promise.all([
+    db.plans.toArray(),
     db.items.toArray(),
     db.entries.toArray(),
     db.checks.toArray(),
@@ -89,9 +87,9 @@ export async function buildYearArchive(year: string): Promise<ArchiveResult> {
     schemaVersion: SCHEMA_VERSION,
     year,
     exportedAt: Date.now(),
-    counts: { templates: templates.length, slots: slots.length, items: items.length, entries: entries.length, checks: checks.length, media: kept.length },
+    counts: { plans: plans.length, items: items.length, entries: entries.length, checks: checks.length, media: kept.length },
   }
-  const data: BackupData = { templates, slots, items, entries, checks, media: kept }
+  const data: BackupData = { plans, items, entries, checks, media: kept }
   packed[MANIFEST] = strToU8(JSON.stringify(manifest, null, 2))
   packed[DATA] = strToU8(JSON.stringify(data))
 
@@ -113,6 +111,10 @@ export async function readArchive(file: File): Promise<ParsedArchive> {
   if (!manifestRaw) throw new Error('Arsip ini tidak punya manifest.json, jadi isinya tidak bisa dipercaya.')
   const manifest = JSON.parse(strFromU8(manifestRaw)) as Manifest
   if (manifest.app !== APP_NAME) throw new Error('Ini bukan arsip ConsistencyMaxxing.')
+  if (manifest.schemaVersion < SCHEMA_VERSION)
+    throw new Error(
+      `Arsip ini memakai format skema ${manifest.schemaVersion}; model plan sudah diganti (template + pola tujuh huruf dibuang), jadi isinya tidak bisa digabung.`,
+    )
   if (manifest.schemaVersion > SCHEMA_VERSION)
     throw new Error(`Arsip memakai skema ${manifest.schemaVersion}; aplikasi ini baru paham skema ${SCHEMA_VERSION}.`)
   const dataRaw = unzipped[DATA]
@@ -127,7 +129,7 @@ export interface ImportReport {
   media: number
   entries: number
   checks: number
-  templates: number
+  plans: number
   skipped: number
 }
 
@@ -136,20 +138,19 @@ export async function applyArchive(parsed: ParsedArchive, mode: 'merge' | 'repla
   const backend = getBackend()
   const { data, files, manifest } = parsed
   if (mode === 'replace') {
-    await Promise.all([db.media.clear(), db.checks.clear(), db.entries.clear(), db.items.clear(), db.slots.clear(), db.templates.clear()])
+    await Promise.all([db.media.clear(), db.checks.clear(), db.entries.clear(), db.items.clear(), db.plans.clear()])
     await backend.clear()
   }
 
-  const report: ImportReport = { year: manifest.year, media: 0, entries: 0, checks: 0, templates: 0, skipped: 0 }
-  for (const template of data.templates) {
-    if (mode === 'merge' && (await db.templates.get(template.id))) {
+  const report: ImportReport = { year: manifest.year, media: 0, entries: 0, checks: 0, plans: 0, skipped: 0 }
+  for (const plan of data.plans) {
+    if (mode === 'merge' && (await db.plans.get(plan.id))) {
       report.skipped++
       continue
     }
-    await db.templates.add(template)
-    report.templates++
+    await db.plans.add(plan)
+    report.plans++
   }
-  for (const slot of data.slots) if (!(mode === 'merge' && (await db.slots.get(slot.id)))) await db.slots.add(slot)
   for (const item of data.items) if (!(mode === 'merge' && (await db.items.get(item.id)))) await db.items.add(item)
 
   for (const entry of data.entries) {
@@ -157,7 +158,7 @@ export async function applyArchive(parsed: ParsedArchive, mode: 'merge' | 'repla
       report.skipped++
       continue
     }
-    await db.entries.add({ ...entry, status: entry.status ?? null })
+    await db.entries.add(entry)
     report.entries++
   }
   for (const check of data.checks) {
@@ -189,6 +190,6 @@ export async function applyArchive(parsed: ParsedArchive, mode: 'merge' | 'repla
 }
 
 export async function eraseEverything() {
-  await Promise.all([db.media.clear(), db.checks.clear(), db.entries.clear(), db.items.clear(), db.slots.clear(), db.templates.clear()])
+  await Promise.all([db.media.clear(), db.checks.clear(), db.entries.clear(), db.items.clear(), db.plans.clear()])
   await getBackend().clear()
 }

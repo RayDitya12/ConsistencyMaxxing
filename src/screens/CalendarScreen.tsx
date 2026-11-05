@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { checksForDate, entriesBetween, entriesForDate, itemsForSlots, mediaBetween, mediaForDate, slotsForDate } from '../db/queries'
-import { monthMarks, planStatuses, slotCoverage, type DayMark, type PlanState } from '../db/derive'
+import { checksForDate, entriesBetween, entriesForDate, itemsForPlans, mediaBetween, mediaForDate, plansForDate } from '../db/queries'
+import { monthMarks, planStatuses, subplanCoverage, type DayMark, type PlanState } from '../db/derive'
 import { formatLong, monthGrid, todayKey } from '../lib/dates'
 import { WEEKDAY_LABELS } from '../config'
 import { PhotoWall } from '../components/PhotoWall'
@@ -168,15 +168,15 @@ function DayCell({
 }
 
 function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
-  const slots = useLiveQuery(() => slotsForDate(date), [date], [])
-  const slotIds = slots.map((s) => s.id).join(',')
-  const items = useLiveQuery(() => itemsForSlots(slotIds ? slotIds.split(',') : []), [slotIds], NO_ITEMS)
+  const plans = useLiveQuery(() => plansForDate(date), [date], [])
+  const planIds = plans.map((p) => p.id).join(',')
+  const items = useLiveQuery(() => itemsForPlans(planIds ? planIds.split(',') : []), [planIds], NO_ITEMS)
   const checks = useLiveQuery(() => checksForDate(date), [date], NO_CHECKS)
   const entries = useLiveQuery(() => entriesForDate(date), [date], NO_ENTRIES)
   const media = useLiveQuery(() => mediaForDate(date), [date], [])
 
-  const statuses = planStatuses(slots, entries, media)
-  const dayEntry = entries.find((e) => e.slotId === null)
+  const statuses = planStatuses(plans, entries, media)
+  const dayEntry = entries.find((e) => e.planId === null)
   const dayPhotos = media.filter((m) => m.entryId === dayEntry?.id)
   const strayPhotos = media.filter(
     (m) => m.entryId !== dayEntry?.id && ![...statuses.values()].some((s) => s.entryId === m.entryId),
@@ -191,22 +191,22 @@ function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
             tutup
           </button>
         </div>
-        {slots.length === 0 && media.length === 0 && !dayEntry?.note && (
+        {plans.length === 0 && media.length === 0 && !dayEntry?.note && (
           <Empty>Hari itu tidak punya plan maupun foto. Kalau memang hari kosong, biarkan kosong.</Empty>
         )}
-        {slots.map((slot) => {
-          const status = statuses.get(slot.id)
-          const list = items.get(slot.id) ?? []
+        {plans.map((plan) => {
+          const status = statuses.get(plan.id)
+          const list = items.get(plan.id) ?? []
           const labels = new Map(list.map((it) => [it.id, it.label]))
           const subStatuses = new Map(list.filter((it) => checks.has(it.id)).map((it) => [it.id, checks.get(it.id)!.status]))
-          const cov = slotCoverage(labels, subStatuses)
+          const cov = subplanCoverage(labels, subStatuses)
           const photos = media.filter((m) => m.entryId === status?.entryId)
           return (
-            <div key={slot.id}>
+            <div key={plan.id}>
               <Heading>
                 <span className="flex items-center gap-2">
                   <Mark status={status?.state ?? 'open'} />
-                  {slot.name}
+                  {plan.name}
                 </span>
               </Heading>
               <p className="mb-2 text-[12px] uppercase tracking-[0.12em] text-ink-2">

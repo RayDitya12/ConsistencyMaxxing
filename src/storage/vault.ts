@@ -8,7 +8,7 @@ import { deleteMediaFiles } from './sweep'
 export interface MediaInput {
   date: string
   entryId: string
-  slotLabel: string | null
+  planLabel: string | null
   card: Blob
   thumb: Blob
   encodeMime: 'image/webp' | 'image/jpeg'
@@ -21,7 +21,7 @@ export interface MediaInput {
 
 export async function storeMedia(input: MediaInput): Promise<MediaRecord> {
   const id = shortId()
-  const name = buildFileName(input.date, input.slotLabel, id, input.encodeMime)
+  const name = buildFileName(input.date, input.planLabel, id, input.encodeMime)
   const record: MediaRecord = {
     id,
     date: input.date,

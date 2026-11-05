@@ -9,7 +9,7 @@ import {
   weekStartKey,
   weekdayIndex,
 } from '../src/lib/dates'
-import { buildLoggedSet, dailyStreak, loggedInWeek, monthMarks, planStatuses, slotCoverage, weeklyStreak } from '../src/db/derive'
+import { buildLoggedSet, dailyStreak, loggedInWeek, monthMarks, planStatuses, subplanCoverage, weeklyStreak } from '../src/db/derive'
 import type { Entry, MediaRecord } from '../src/db/types'
 
 describe('kunci tanggal lokal', () => {
@@ -73,7 +73,7 @@ describe('streak', () => {
   })
 })
 
-describe('cakupan slot', () => {
+describe('cakupan subplan', () => {
   const items = new Map([
     ['i1', 'Pull-ups'],
     ['i2', 'Push-ups'],
@@ -81,7 +81,7 @@ describe('cakupan slot', () => {
   ])
 
   it('memisahkan skip dari tidak dicatat', () => {
-    const coverage = slotCoverage(items, new Map([
+    const coverage = subplanCoverage(items, new Map([
       ['i1', 'done' as const],
       ['i2', 'skip' as const],
     ]))
@@ -89,7 +89,7 @@ describe('cakupan slot', () => {
   })
 
   it('hari tanpa satu tick pun bukan hari yang gagal', () => {
-    expect(slotCoverage(items, new Map()).untracked).toHaveLength(3)
+    expect(subplanCoverage(items, new Map()).untracked).toHaveLength(3)
   })
 })
 
@@ -97,7 +97,7 @@ describe('keadaan plan per hari', () => {
   const entry = (over: Partial<Entry> = {}): Entry => ({
     id: 'entry-1',
     date: '2026-11-05',
-    slotId: 'slot-a',
+    planId: 'plan-a',
     status: null,
     note: '',
     capturedAt: 0,
@@ -121,28 +121,28 @@ describe('keadaan plan per hari', () => {
     createdAt: 0,
     ...over,
   })
-  const slots = [{ id: 'slot-a' }, { id: 'slot-b' }]
+  const plans = [{ id: 'plan-a' }, { id: 'plan-b' }]
 
   it('foto mengalahkan centang tanpa foto', () => {
-    const statuses = planStatuses(slots, [entry({ status: 'done' })], [photo()])
-    expect(statuses.get('slot-a')).toEqual({ state: 'full', photos: 1, entryId: 'entry-1' })
+    const statuses = planStatuses(plans, [entry({ status: 'done' })], [photo()])
+    expect(statuses.get('plan-a')).toEqual({ state: 'full', photos: 1, entryId: 'entry-1' })
   })
 
   it('centang tanpa foto terpisah dari plan yang belum disentuh', () => {
-    const statuses = planStatuses(slots, [entry({ status: 'done' }), entry({ id: 'entry-2', slotId: 'slot-b', status: 'skip' })], [])
-    expect(statuses.get('slot-a')?.state).toBe('half')
-    expect(statuses.get('slot-b')?.state).toBe('skip')
-    expect(planStatuses(slots, [], []).get('slot-a')?.state).toBe('open')
+    const statuses = planStatuses(plans, [entry({ status: 'done' }), entry({ id: 'entry-2', planId: 'plan-b', status: 'skip' })], [])
+    expect(statuses.get('plan-a')?.state).toBe('half')
+    expect(statuses.get('plan-b')?.state).toBe('skip')
+    expect(planStatuses(plans, [], []).get('plan-a')?.state).toBe('open')
   })
 
   it('entri level hari tidak dianggap sebuah plan', () => {
-    const statuses = planStatuses(slots, [entry({ slotId: null })], [])
-    expect(statuses.get('slot-a')).toEqual({ state: 'open', photos: 0, entryId: null })
+    const statuses = planStatuses(plans, [entry({ planId: null })], [])
+    expect(statuses.get('plan-a')).toEqual({ state: 'open', photos: 0, entryId: null })
   })
 
   it('grid bulan menandai foto lebih tinggi daripada centang setengah', () => {
     const marks = monthMarks(
-      [entry({ status: 'done' }), entry({ id: 'entry-2', date: '2026-11-06', slotId: 'slot-b', status: 'skip' })],
+      [entry({ status: 'done' }), entry({ id: 'entry-2', date: '2026-11-06', planId: 'plan-b', status: 'skip' })],
       [photo({ date: '2026-11-06', entryId: 'entry-2' })],
     )
     expect(marks.get('2026-11-05')).toEqual({ mark: 'half', photos: 0, plans: 1 })
@@ -150,7 +150,7 @@ describe('keadaan plan per hari', () => {
   })
 
   it('hari yang hanya berisi skip tetap terbaca sebagai skip', () => {
-    const marks = monthMarks([entry({ slotId: 'slot-b', status: 'skip' })], [])
+    const marks = monthMarks([entry({ planId: 'plan-b', status: 'skip' })], [])
     expect(marks.get('2026-11-05')).toEqual({ mark: 'skip', photos: 0, plans: 1 })
   })
 

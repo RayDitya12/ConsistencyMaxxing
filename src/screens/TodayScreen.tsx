@@ -4,12 +4,12 @@ import {
   checksForDate,
   ensureEntry,
   entriesForDate,
-  itemsForSlots,
+  itemsForPlans,
   loggedDates,
   mediaForDate,
+  plansForDate,
   setEntryStatus,
   setNote,
-  slotsForDate,
 } from '../db/queries'
 import { dailyStreak, planStatuses, weeklyStreak, type PlanState } from '../db/derive'
 import { formatLong } from '../lib/dates'
@@ -38,25 +38,24 @@ const READING: Record<PlanState, string> = {
 export function TodayScreen() {
   const day = useLoggingDay()
   const boot = useBoot()
-  const [open, setOpen] = useState<{ slotId: string | null; label: string | null } | null>(null)
+  const [open, setOpen] = useState<{ planId: string; label: string } | null>(null)
   const target = day?.target ?? ''
 
   const logged = useLiveQuery(async () => loggedDates(), [target], null)
-  const slots = useLiveQuery(() => (target ? slotsForDate(target) : Promise.resolve([])), [target], [])
-  const slotIds = slots.map((s) => s.id).join(',')
-  const items = useLiveQuery(() => itemsForSlots(slotIds ? slotIds.split(',') : []), [slotIds], NO_ITEMS)
+  const plans = useLiveQuery(() => (target ? plansForDate(target) : Promise.resolve([])), [target], [])
+  const planIds = plans.map((p) => p.id).join(',')
+  const items = useLiveQuery(() => itemsForPlans(planIds ? planIds.split(',') : []), [planIds], NO_ITEMS)
   const checks = useLiveQuery(() => (target ? checksForDate(target) : Promise.resolve(NO_CHECKS)), [target], NO_CHECKS)
   const media = useLiveQuery(() => (target ? mediaForDate(target) : Promise.resolve(NO_MEDIA)), [target], NO_MEDIA)
   const entries = useLiveQuery(() => (target ? entriesForDate(target) : Promise.resolve(NO_ENTRIES)), [target], NO_ENTRIES)
 
   if (!day) return <Screen><TopBar title="Hari ini" /></Screen>
 
-  const statuses = planStatuses(slots, entries, media)
-  const noteEntry = entries.find((e) => e.slotId === null)
-  const dayEntryId = noteEntry?.id ?? null
+  const statuses = planStatuses(plans, entries, media)
+  const dayEntry = entries.find((e) => e.planId === null)
   const ready = shutterReady(boot)
-  const photographed = slots.filter((s) => statuses.get(s.id)?.state === 'full').length
-  const skipMarks = new Set(entries.filter((e) => e.slotId !== null && e.status === 'skip').map((e) => e.slotId as string))
+  const photographed = plans.filter((p) => statuses.get(p.id)?.state === 'full').length
+  const skipped = new Set(entries.filter((e) => e.planId !== null && e.status === 'skip').map((e) => e.planId as string))
 
   return (
     <Screen>
@@ -69,38 +68,30 @@ export function TodayScreen() {
         <Streak value={logged ? dailyStreak(logged, day.today) : 0} unit="hari berturut" />
       </div>
       <div className="flex-1 overflow-y-auto">
-        <Section label={`Plan hari ini · ${photographed}/${slots.length} punya foto`}>
-          {slots.length === 0 ? (
-            <>
-              <Empty>
-                Tidak ada plan terjadwal hari ini. Satu foto tanpa plan tetap tercatat sebagai hari yang
-                dilakoni.
-              </Empty>
-              {ready ? (
-                <CameraShutter dateKey={target} slotId={null} slotLabel={null} />
-              ) : (
-                <StorageProblem boot={boot} />
-              )}
-            </>
-          ) : (
+        {plans.length === 0 ? (
+          <Section label="Plan hari ini">
+            <p className="py-6 text-[15px] leading-relaxed text-ink-2">Tidak ada plan hari ini.</p>
+          </Section>
+        ) : (
+          <Section label={`Plan hari ini · ${photographed}/${plans.length} punya foto`}>
             <ul className="-mx-4 flex flex-col">
-              {slots.map((s) => (
+              {plans.map((p) => (
                 <PlanRow
-                  key={s.id}
+                  key={p.id}
                   date={target}
-                  slotId={s.id}
-                  name={s.name}
-                  status={statuses.get(s.id)?.state ?? 'open'}
-                  skipped={skipMarks.has(s.id)}
-                  photos={statuses.get(s.id)?.photos ?? 0}
-                  items={items.get(s.id) ?? []}
+                  planId={p.id}
+                  name={p.name}
+                  status={statuses.get(p.id)?.state ?? 'open'}
+                  skipped={skipped.has(p.id)}
+                  photos={statuses.get(p.id)?.photos ?? 0}
+                  items={items.get(p.id) ?? []}
                   checks={checks}
-                  onOpen={() => setOpen({ slotId: s.id, label: s.name })}
+                  onOpen={() => setOpen({ planId: p.id, label: p.name })}
                 />
               ))}
             </ul>
-          )}
-        </Section>
+          </Section>
+        )}
         {media.length > 0 && (
           <Section label="Bukti hari ini">
             <PhotoWall records={media} />
@@ -109,11 +100,11 @@ export function TodayScreen() {
         <Section label="Catatan hari ini">
           <textarea
             key={`${target}`}
-            defaultValue={noteEntry?.note ?? ''}
+            defaultValue={dayEntry?.note ?? ''}
             rows={4}
             placeholder="Tulis apa saja tentang hari ini."
             onBlur={async (e) => {
-              if (!noteEntry && e.target.value.trim() === '') return
+              if (!dayEntry && e.target.value.trim() === '') return
               const entry = await ensureEntry(target, null)
               await setNote(entry.id, e.target.value)
             }}
@@ -125,10 +116,10 @@ export function TodayScreen() {
       {open && (
         <PlanSheet
           date={target}
-          slotId={open.slotId}
-          label={open.label ?? 'Level hari'}
-          records={media.filter((m) => m.entryId === (open.slotId ? statuses.get(open.slotId)?.entryId : dayEntryId))}
-          state={open.slotId ? statuses.get(open.slotId)?.state ?? 'open' : 'open'}
+          planId={open.planId}
+          label={open.label}
+          records={media.filter((m) => m.entryId === statuses.get(open.planId)?.entryId)}
+          state={statuses.get(open.planId)?.state ?? 'open'}
           ready={ready}
           boot={boot}
           onClose={() => setOpen(null)}
@@ -140,7 +131,7 @@ export function TodayScreen() {
 
 function PlanRow({
   date,
-  slotId,
+  planId,
   name,
   status,
   skipped,
@@ -150,7 +141,7 @@ function PlanRow({
   onOpen,
 }: {
   date: string
-  slotId: string
+  planId: string
   name: string
   status: PlanState
   skipped: boolean
@@ -173,7 +164,7 @@ function PlanRow({
         <button
           type="button"
           aria-label={`${name}: ${skipped ? 'batalkan lewati' : 'lewati hari ini'}`}
-          onClick={() => void setEntryStatus(date, slotId, skipped ? null : 'skip')}
+          onClick={() => void setEntryStatus(date, planId, skipped ? null : 'skip')}
           className="touch-target shrink-0 px-2 text-[11px] uppercase tracking-[0.12em]"
           style={
             skipped
@@ -195,7 +186,7 @@ function PlanRow({
 
 function PlanSheet({
   date,
-  slotId,
+  planId,
   label,
   records,
   state,
@@ -204,7 +195,7 @@ function PlanSheet({
   onClose,
 }: {
   date: string
-  slotId: string | null
+  planId: string
   label: string
   records: MediaRecord[]
   state: PlanState
@@ -212,18 +203,6 @@ function PlanSheet({
   boot: ReturnType<typeof useBoot>
   onClose: () => void
 }) {
-  async function catatTanpaFoto() {
-    if (!slotId) return
-    await setEntryStatus(date, slotId, 'done')
-    onClose()
-  }
-
-  async function cabut() {
-    if (!slotId) return
-    await setEntryStatus(date, slotId, null)
-    onClose()
-  }
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto p-4" style={{ background: 'var(--surface)' }}>
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-4 pb-8">
@@ -233,13 +212,8 @@ function PlanSheet({
             tutup
           </button>
         </div>
-        <p className="text-[13px] leading-relaxed text-ink-2">
-          {slotId
-            ? 'Satu foto menutup plan ini. Tanpa foto, plan berhenti di setengah selesai dan streak tidak ikut hidup.'
-            : 'Hari tanpa plan tetap boleh punya bukti.'}
-        </p>
         {ready ? (
-          <CameraShutter dateKey={date} slotId={slotId} slotLabel={slotId ? label : null} autoStart />
+          <CameraShutter dateKey={date} planId={planId} planLabel={label} />
         ) : (
           <StorageProblem boot={boot} />
         )}
@@ -249,12 +223,29 @@ function PlanSheet({
           </h3>
           <PhotoWall records={records} emptyText="Belum ada foto pada plan ini." />
         </div>
-        {slotId && (
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => void catatTanpaFoto()}>Catat tanpa foto</Button>
-            {state === 'half' && <Button onClick={() => void cabut()}>Cabut centang</Button>}
-          </div>
-        )}
+        <p className="text-[12px] leading-relaxed text-ink-2">
+          Satu foto menutup plan ini. Tanpa foto, plan berhenti di setengah selesai dan streak tidak ikut hidup.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={async () => {
+              await setEntryStatus(date, planId, 'done')
+              onClose()
+            }}
+          >
+            Catat tanpa foto
+          </Button>
+          {state === 'half' && (
+            <Button
+              onClick={async () => {
+                await setEntryStatus(date, planId, null)
+                onClose()
+              }}
+            >
+              Cabut centang
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )

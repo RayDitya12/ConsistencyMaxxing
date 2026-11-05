@@ -13,7 +13,7 @@ export const CAPTION_FIELDS = {
 
 export interface CaptionInput {
   dateKey: string
-  slotLabel: string | null
+  planLabel: string | null
   weekStreak: number
   dailyStreak: number
 }
@@ -29,7 +29,7 @@ export function buildCaption(input: CaptionInput): Caption {
   const head = CAPTION_FIELDS.date ? formatShort(input.dateKey) : ''
   return {
     headline: CAPTION_FIELDS.weekday && head ? `${weekdayLabel(input.dateKey)} ${head}` : head,
-    slot: CAPTION_FIELDS.slot && input.slotLabel ? truncate(input.slotLabel, 34) : null,
+    slot: CAPTION_FIELDS.slot && input.planLabel ? truncate(input.planLabel, 34) : null,
     week: CAPTION_FIELDS.weekStreak ? `W${input.weekStreak}` : null,
     brand: CAPTION_FIELDS.brand ? APP_NAME : null,
   }

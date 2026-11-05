@@ -13,7 +13,7 @@ const READING: Record<string, string> = { done: 'selesai', skip: 'skip', '': 'be
 
 export function ChecklistStrip({ date, items, checks }: Props) {
   if (items.length === 0)
-    return <Empty>Slot ini belum punya daftar. Tulis apa saja yang ingin kamu catat per sesi di tab Plan.</Empty>
+    return <Empty>Plan ini belum punya subplan. Tulis apa saja yang ingin kamu catat per sesi di tab Plan.</Empty>
 
   async function cycle(item: Item) {
     const current = checks.get(item.id)?.status ?? ''

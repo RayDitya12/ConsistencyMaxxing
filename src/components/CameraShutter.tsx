@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { CardMode } from '../config'
 import { renderCapture } from '../capture/pipeline'
 import {
@@ -14,21 +15,22 @@ import { ensureEntry } from '../db/queries'
 import { storeMedia } from '../storage/vault'
 import { Button } from './ui'
 
-type Stage = 'idle' | 'opening' | 'live' | 'error'
+type Stage = 'opening' | 'live' | 'error'
 
 interface Props {
   dateKey: string
-  slotId: string | null
-  slotLabel: string | null
-  /** Sheet plan membukakan kamera sendiri; tap row = tap 'Buka kamera'. */
-  autoStart?: boolean
-  onCaptured?: () => void
+  planId: string
+  planLabel: string
 }
 
-export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, onCaptured }: Props) {
+/**
+ * Rasa aplikasi kamera: sheet plan langsung menyalakan jendela bidik tanpa tombol perantara.
+ * Rana bulat di tengah, ikon galeri kecil di sebelahnya, pemilih sisi kamera di kanan.
+ */
+export function CameraShutter({ dateKey, planId, planLabel }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const cameraRef = useRef<OpenedCamera | null>(null)
-  const [stage, setStage] = useState<Stage>('idle')
+  const [stage, setStage] = useState<Stage>('opening')
   const [problem, setProblem] = useState('')
   const [mode, setMode] = useState<CardMode>('portrait')
   const [facing, setFacing] = useState<Facing>('environment')
@@ -50,11 +52,10 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
     }
   }
 
-  // Sheet plan memanggil getUserMedia begitu ia dibuka, masih di dalam jejak tap pengguna.
-  // Penanda hidupnya per-permintaan, bukan per-komponen: React boleh memanggil effect ini
-  // dua kali di dev, dan permintaan yang sudah dibuang tidak boleh menutup kamera berikutnya.
+  // getUserMedia dipanggil masih di dalam jejak tap yang membuka sheet ini. Penanda hidupnya
+  // per-permintaan, bukan per-komponen: React memanggil effect ini dua kali di dev, dan permintaan
+  // yang sudah dibuang tidak boleh menutup kamera berikutnya.
   useEffect(() => {
-    if (!autoStart) return
     const jalan = { aktif: true }
     void (async () => {
       try {
@@ -74,24 +75,18 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
     return () => {
       jalan.aktif = false
     }
-  }, [autoStart])
-
-  function stop() {
-    closeCamera(cameraRef.current)
-    cameraRef.current = null
-    setProblem('')
-    setStage('idle')
-  }
+  }, [])
 
   async function compose(blob: Blob, source: 'viewfinder' | 'fallback') {
     setBusy(true)
+    setProblem('')
     try {
-      const card = await renderCapture({ blob, mode, dateKey, slotLabel, weekStreak: 0, dailyStreak: 0 })
-      const entry = await ensureEntry(dateKey, slotId)
+      const card = await renderCapture({ blob, mode, dateKey, planLabel, weekStreak: 0, dailyStreak: 0 })
+      const entry = await ensureEntry(dateKey, planId)
       await storeMedia({
         date: dateKey,
         entryId: entry.id,
-        slotLabel,
+        planLabel,
         card: card.card,
         thumb: card.thumb,
         encodeMime: card.encodeMime,
@@ -101,7 +96,6 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
         height: card.height,
         caption: card.caption,
       })
-      onCaptured?.()
     } catch (err) {
       setProblem((err as Error).message)
       setStage('error')
@@ -112,11 +106,12 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
 
   async function shoot() {
     const video = videoRef.current
-    if (!video || busy) return
+    if (!video || busy || stage !== 'live') return
     await compose(await grabFrame(video), 'viewfinder')
   }
 
   async function viaFile() {
+    if (busy) return
     const blob = await pickViaInput()
     if (blob) await compose(blob, 'fallback')
   }
@@ -134,87 +129,99 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
           />
           {stage !== 'live' && (
             <div
-              className="flex h-full w-full items-center justify-center px-6 text-center text-[13px] leading-relaxed text-ink-2"
+              className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center text-[13px] leading-relaxed text-ink-2"
               style={{ background: 'var(--surface-2)' }}
             >
-              {stage === 'opening' ? 'Menyalakan kamera…' : stage === 'idle' ? 'Belum ada kamera aktif.' : problem}
+              {stage === 'opening' ? <span>Menyalakan kamera…</span> : (
+                <>
+                  <span>{problem}</span>
+                  <Button onClick={() => void start()}>Coba lagi</Button>
+                </>
+              )}
             </div>
+          )}
+          {stage === 'live' && (
+            <button
+              type="button"
+              onClick={() => setMode((m) => (m === 'portrait' ? 'landscape' : 'portrait'))}
+              className="absolute right-2 top-2 touch-target px-2 text-[11px] uppercase tracking-[0.14em]"
+              style={{ background: 'var(--surface)', color: 'var(--ink)' }}
+            >
+              {mode === 'portrait' ? 'tegak' : 'tidur'}
+            </button>
           )}
         </div>
       </div>
 
-      {stage === 'live' ? (
-        <div className="mt-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <ModeToggle mode={mode} onChange={setMode} />
-            <button
-              type="button"
-              onClick={() => start(facing === 'environment' ? 'user' : 'environment')}
-              className="touch-target px-2 text-[11px] uppercase tracking-[0.14em] text-ink-2"
-            >
-              balik
-            </button>
-          </div>
-          <div className="flex items-center justify-center py-2">
-            <button
-              type="button"
-              aria-label="Ambil foto"
-              disabled={busy}
-              onClick={shoot}
-              className="touch-target flex h-[74px] w-[74px] items-center justify-center rounded-full border-2 disabled:opacity-50"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <span
-                className="block h-[54px] w-[54px] rounded-full"
-                style={{ background: busy ? 'var(--ink-2)' : 'var(--ink)' }}
-              />
-            </button>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-            <Button onClick={stop}>Tutup kamera</Button>
-            <GalleryButton onPick={viaFile} busy={busy} />
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button variant="accent" disabled={stage === 'opening'} onClick={() => start()}>
-            {stage === 'opening' ? 'Membuka…' : stage === 'error' ? 'Coba lagi' : 'Buka kamera'}
-          </Button>
-          <GalleryButton onPick={viaFile} busy={stage === 'opening' || busy} />
-        </div>
-      )}
+      <div className="mt-4 flex items-center justify-center gap-10">
+        <IconButton label="Pilih gambar dari galeri" onClick={() => void viaFile()} disabled={busy}>
+          <GalleryIcon />
+        </IconButton>
+        <button
+          type="button"
+          aria-label="Ambil foto"
+          disabled={stage !== 'live' || busy}
+          onClick={() => void shoot()}
+          className="flex h-[74px] w-[74px] items-center justify-center rounded-full border-2 disabled:opacity-40"
+          style={{ borderColor: 'var(--line)' }}
+        >
+          <span
+            className="block h-[54px] w-[54px] rounded-full"
+            style={{ background: busy || stage !== 'live' ? 'var(--ink-2)' : 'var(--ink)' }}
+          />
+        </button>
+        <IconButton
+          label="Ganti sisi kamera"
+          onClick={() => void start(facing === 'environment' ? 'user' : 'environment')}
+          disabled={stage !== 'live' || busy}
+        >
+          <FlipIcon />
+        </IconButton>
+      </div>
     </div>
   )
 }
 
-// Kamera tetap jalur utama; ini opsi yang selalu ada, bukan hadiah setelah kamera gagal.
-function GalleryButton({ onPick, busy }: { onPick: () => void; busy: boolean }) {
+function IconButton({
+  label,
+  onClick,
+  disabled,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  disabled: boolean
+  children: ReactNode
+}) {
   return (
     <button
       type="button"
-      disabled={busy}
-      onClick={onPick}
-      className="touch-target px-2 text-[11px] uppercase tracking-[0.14em] text-ink-2 disabled:opacity-40"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="touch-target flex h-11 w-11 items-center justify-center rounded-full border text-ink-2 disabled:opacity-40"
+      style={{ borderColor: 'var(--hairline)' }}
     >
-      pilih dari galeri
+      {children}
     </button>
   )
 }
 
-function ModeToggle({ mode, onChange }: { mode: CardMode; onChange: (m: CardMode) => void }) {
+function GalleryIcon() {
   return (
-    <div className="flex" style={{ border: '1px solid var(--line)' }}>
-      {(['portrait', 'landscape'] as const).map((m) => (
-        <button
-          key={m}
-          type="button"
-          onClick={() => onChange(m)}
-          className="touch-target px-3 text-[11px] uppercase tracking-[0.14em]"
-          style={m === mode ? { background: 'var(--ink)', color: 'var(--surface)' } : { color: 'var(--ink-2)' }}
-        >
-          {m === 'portrait' ? 'tegak' : 'tidur'}
-        </button>
-      ))}
-    </div>
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <rect x="2.5" y="4.5" width="19" height="15" rx="2" />
+      <circle cx="8.4" cy="9.6" r="1.4" />
+      <path d="M3.5 17.5l4.5-4.5 3.5 3 3-2.5 5.5 5" />
+    </svg>
+  )
+}
+
+function FlipIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <path d="M4.5 10a7.5 7.5 0 0112.6-3.4M19.5 14a7.5 7.5 0 01-12.6 3.4" />
+      <path d="M17 3.5v3.2h-3.2M7 20.5v-3.2h3.2" />
+    </svg>
   )
 }

@@ -70,14 +70,26 @@ export async function grabFrame(video: HTMLVideoElement): Promise<Blob> {
 
 /** Opsi "pilih dari galeri" di shutter; juga jalan cadangan kalau getUserMedia diblok (WebView,
  * beberapa browser). Tanpa atribut capture: Android akan membuka kamera sistem lagi, padahal
- * tombol ini justru untuk memilih berkas. Dicatat sebagai source 'fallback' supaya jejaknya jujur. */
+ * tombol ini justru untuk memilih berkas. Dicatat sebagai source 'fallback' supaya jejaknya jujur.
+ * Input-nya dipasang ke DOM (beberapa browser mengabaikan click pada elemen lepas) dan selalu
+ * satu buah: permintaan berikutnya membuang yang tertinggal dari penolakan sebelumnya. */
+const PICK_ID = 'cmx-file-pick'
+
 export function pickViaInput(): Promise<Blob | null> {
   return new Promise((resolve) => {
+    document.getElementById(PICK_ID)?.remove()
     const input = document.createElement('input')
+    input.id = PICK_ID
     input.type = 'file'
     input.accept = 'image/*'
-    input.onchange = () => resolve(input.files?.[0] ?? null)
-    input.oncancel = () => resolve(null)
+    input.style.cssText = 'position:fixed;left:-1px;top:0;width:1px;height:1px;opacity:0'
+    document.body.appendChild(input)
+    const finish = (blob: Blob | null) => {
+      input.remove()
+      resolve(blob)
+    }
+    input.onchange = () => finish(input.files?.[0] ?? null)
+    input.oncancel = () => finish(null)
     input.click()
   })
 }

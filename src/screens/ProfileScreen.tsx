@@ -61,7 +61,7 @@ function SummaryView({ onOpenSettings }: { onOpenSettings: () => void }) {
     return {
       media: media.length,
       days: (await loggedDates()).size,
-      templates: await db.templates.filter((t) => t.archivedAt === null).count(),
+      plans: await db.plans.count(),
     }
   })
   const years = useLiveQuery(async () => yearsAvailable(), [], [])
@@ -88,7 +88,7 @@ function SummaryView({ onOpenSettings }: { onOpenSettings: () => void }) {
         <Section label="Kamu di aplikasi ini">
           <Row label="Hari tercatat" value={String(counts?.days ?? 0)} />
           <Row label="Foto tersimpan" value={String(counts?.media ?? 0)} />
-          <Row label="Plan aktif" value={String(counts?.templates ?? 0)} />
+          <Row label="Plan aktif" value={String(counts?.plans ?? 0)} />
           <Row label="Tahun punya isi" value={(years ?? []).join(', ') || 'belum ada'} />
         </Section>
         <Section label="Perangkat ini">
@@ -120,7 +120,7 @@ function SettingsView({ onBack }: { onBack: () => void }) {
       media: media.length,
       bytes,
       entries: await db.entries.count(),
-      templates: await db.templates.count(),
+      plans: await db.plans.count(),
       days: (await loggedDates()).size,
     }
   })
@@ -261,7 +261,7 @@ function SettingsView({ onBack }: { onBack: () => void }) {
           <Row label="Foto" value={String(counts?.media ?? 0)} />
           <Row label="Hari tercatat" value={String(days)} />
           <Row label="Entri" value={String(counts?.entries ?? 0)} />
-          <Row label="Rencana" value={String(counts?.templates ?? 0)} />
+          <Row label="Rencana" value={String(counts?.plans ?? 0)} />
           <Row label="Ukuran foto" value={formatBytes(counts?.bytes ?? 0)} />
           <Row label="Rata-rata per hari" value={perDay === 0 ? '-' : formatBytes(perDay)} />
         </Section>

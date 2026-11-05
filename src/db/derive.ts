@@ -49,7 +49,7 @@ export function weekNumber(firstWeekStart: string, today: string): number {
   return Math.floor(diffDays(firstWeekStart, weekStartKey(today)) / 7) + 1
 }
 
-export function slotCoverage(
+export function subplanCoverage(
   itemLabels: Map<string, string>,
   statuses: Map<string, 'done' | 'skip'>,
 ): Coverage {
@@ -78,25 +78,25 @@ const NO_STATUS: PlanStatus = { state: 'open', photos: 0, entryId: null }
 
 /** Keadaan tiap plan pada satu hari. Foto selalu menang atas centang, sesuai aturan streak. */
 export function planStatuses(
-  slots: { id: string }[],
+  plans: { id: string }[],
   entries: Entry[],
   media: MediaRecord[],
 ): Map<string, PlanStatus> {
   const photosPerEntry = new Map<string, number>()
   for (const record of media) photosPerEntry.set(record.entryId, (photosPerEntry.get(record.entryId) ?? 0) + 1)
-  const entryOfSlot = new Map<string, Entry>()
-  for (const entry of entries) if (entry.slotId !== null) entryOfSlot.set(entry.slotId, entry)
+  const entryOfPlan = new Map<string, Entry>()
+  for (const entry of entries) if (entry.planId !== null) entryOfPlan.set(entry.planId, entry)
   const map = new Map<string, PlanStatus>()
-  for (const slot of slots) {
-    const entry = entryOfSlot.get(slot.id)
+  for (const plan of plans) {
+    const entry = entryOfPlan.get(plan.id)
     if (!entry) {
-      map.set(slot.id, NO_STATUS)
+      map.set(plan.id, NO_STATUS)
       continue
     }
     const photos = photosPerEntry.get(entry.id) ?? 0
     const state: PlanState =
       photos > 0 ? 'full' : entry.status === 'done' ? 'half' : entry.status === 'skip' ? 'skip' : 'open'
-    map.set(slot.id, { state, photos, entryId: entry.id })
+    map.set(plan.id, { state, photos, entryId: entry.id })
   }
   return map
 }

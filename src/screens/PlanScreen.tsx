@@ -1,69 +1,68 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/db'
 import { Button, Empty, Field, Screen, Section, TopBar } from '../components/ui'
 import {
-  addItem,
-  archiveTemplate,
-  createTemplate,
-  moveItem,
-  patternPreview,
-  removeItem,
-  renameItem,
-  renameSlot,
-  setSlotKind,
-  updatePattern,
-  type Domain,
+  addSubplan,
+  createPlan,
+  formatDays,
+  moveSubplan,
+  removePlan,
+  removeSubplan,
+  renamePlan,
+  renameSubplan,
+  setPlanDays,
+  toggleDay,
 } from '../plan/actions'
-import { parseWeeklyPattern } from '../plan/pattern'
-import type { Slot, Template } from '../db/types'
+import { seedWorkoutExample } from '../plan/example'
+import { allPlans, itemsForPlan } from '../db/queries'
 import { WEEKDAY_LABELS } from '../config'
-
-const DOMAINS: { value: Domain; label: string }[] = [
-  { value: 'workout', label: 'Latihan' },
-  { value: 'study', label: 'Kuliah' },
-  { value: 'skill', label: 'Skill' },
-  { value: 'custom', label: 'Lainnya' },
-]
+import type { Item, Plan } from '../db/types'
 
 export function PlanScreen() {
-  const templates = useLiveQuery(
-    () => db.templates.filter((t) => t.archivedAt === null).toArray(),
-    [],
-    [],
-  )
+  const plans = useLiveQuery(() => allPlans(), [], [])
+  const [adding, setAdding] = useState(false)
+
   return (
     <Screen>
-      <TopBar title="Plan" right={<span className="num text-[12px] text-ink-2">{templates.length}</span>} />
+      <TopBar title="Plan" right={<span className="num text-[12px] text-ink-2">{plans.length}</span>} />
       <div className="flex-1 overflow-y-auto">
-        <NewTemplate />
-        {templates.length === 0 && (
-          <Empty>
-            Belum ada rencana. Ketik tujuh huruf, satu huruf per hari, contoh ULURULR. Aplikasi ini berangkat
-            kosong: nama hari, nama sesi, dan daftarnya sepenuhnya tulisanmu.
-          </Empty>
+        {adding ? (
+          <NewPlan onDone={() => setAdding(false)} />
+        ) : (
+          <Section label="Rencanamu">
+            <Button variant="accent" className="w-full" onClick={() => setAdding(true)}>
+              + Tambah rencana
+            </Button>
+            {plans.length === 0 && (
+              <>
+                <Empty>
+                  Belum ada rencana. Satu rencana itu namanya plus hari-hari ia muncul — semuanya tulisanmu
+                  sendiri, tidak ada yang dibuat otomatis.
+                </Empty>
+                <Button className="w-full" onClick={() => void seedWorkoutExample()}>
+                  Isi contoh: Workout (Senin Upper, Selasa Lower, dst)
+                </Button>
+              </>
+            )}
+          </Section>
         )}
-        {templates.map((t) => (
-          <TemplateEditor key={t.id} template={t} />
+        {plans.map((plan) => (
+          <PlanCard key={plan.id} plan={plan} />
         ))}
       </div>
     </Screen>
   )
 }
 
-function NewTemplate() {
+function NewPlan({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState('')
-  const [domain, setDomain] = useState<Domain>('workout')
-  const [pattern, setPattern] = useState('')
+  const [days, setDays] = useState<number[]>([])
   const [error, setError] = useState('')
 
-  const preview = parseWeeklyPattern(pattern)
-  const submit = async () => {
+  const save = async () => {
     try {
-      await createTemplate(name, domain, pattern)
-      setName('')
-      setPattern('')
-      setError('')
+      await createPlan(name, days)
+      onDone()
     } catch (err) {
       setError((err as Error).message)
     }
@@ -75,148 +74,138 @@ function NewTemplate() {
         <Field
           label="Nama rencana"
           value={name}
-          placeholder="Workout"
-          onChange={(e) => setName(e.target.value)}
-        />
-        <div className="flex gap-2">
-          {DOMAINS.map((d) => (
-            <Button
-              key={d.value}
-              variant={domain === d.value ? 'solid' : 'ghost'}
-              className="flex-1 text-[12px]"
-              onClick={() => setDomain(d.value)}
-            >
-              {d.label}
-            </Button>
-          ))}
-        </div>
-        <Field
-          label="Pola 7 hari"
-          value={pattern}
-          placeholder="ULURULR"
-          autoCapitalize="characters"
+          placeholder="mis. Belajar NLP"
+          autoFocus
           onChange={(e) => {
-            setPattern(e.target.value)
+            setName(e.target.value)
             setError('')
           }}
         />
-        <div className="flex justify-between text-[11px] tracking-[0.1em] text-ink-2">
-          {WEEKDAY_LABELS.map((w, i) => (
-            <span key={w}>{preview.ok ? `${w} ${preview.keys[i]}` : w}</span>
-          ))}
+        <DayPicker
+          days={days}
+          onToggle={(i) => setDays((current) => toggleDay(current, i))}
+        />
+        <p className="text-[12px] leading-relaxed text-ink-2">{formatDays(days)}</p>
+        {error && (
+          <p className="text-[13px]" style={{ color: 'var(--danger)' }}>
+            {error}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <Button variant="accent" className="flex-1" onClick={() => void save()}>
+            Simpan
+          </Button>
+          <Button onClick={onDone}>Batal</Button>
         </div>
-        {error && <p className="text-[13px]" style={{ color: 'var(--danger)' }}>{error}</p>}
-        <Button variant="accent" className="w-full" disabled={!preview.ok} onClick={submit}>
-          Tambah rencana
-        </Button>
       </div>
     </Section>
   )
 }
 
-function TemplateEditor({ template }: { template: Template }) {
-  const slots = useLiveQuery(
-    () => db.slots.where('templateId').equals(template.id).toArray(),
-    [template.id],
-    [] as Slot[],
+function DayPicker({ days, onToggle }: { days: number[]; onToggle: (index: number) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {WEEKDAY_LABELS.map((label, i) => (
+        <button
+          key={label}
+          type="button"
+          aria-pressed={days.includes(i)}
+          aria-label={`${label}: ${days.includes(i) ? 'sudah dipilih' : 'belum dipilih'}`}
+          onClick={() => onToggle(i)}
+          className="touch-target min-w-[44px] flex-1 border text-[12px] font-semibold uppercase tracking-[0.08em]"
+          style={
+            days.includes(i)
+              ? { background: 'var(--ink)', color: 'var(--surface)', borderColor: 'var(--ink)' }
+              : { background: 'transparent', color: 'var(--ink-2)', borderColor: 'var(--hairline)' }
+          }
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   )
-  const [patternDraft, setPatternDraft] = useState(template.pattern.join(''))
-  const [error, setError] = useState('')
+}
 
-  const applyPattern = async () => {
-    try {
-      await updatePattern(template.id, patternDraft)
-      setError('')
-    } catch (err) {
-      setError((err as Error).message)
+function PlanCard({ plan }: { plan: Plan }) {
+  const [confirming, setConfirming] = useState(false)
+
+  const remove = () => {
+    if (confirming) {
+      void removePlan(plan.id)
+      return
     }
+    setConfirming(true)
+    setTimeout(() => setConfirming(false), 4000)
   }
 
   return (
-    <Section label={template.name}>
-      <div className="space-y-4">
-        <p className="text-[12px] leading-relaxed text-ink-2">{patternPreview(template.pattern, slots)}</p>
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <Field
-              label="Ubah pola"
-              value={patternDraft}
-              autoCapitalize="characters"
-              onChange={(e) => setPatternDraft(e.target.value)}
-            />
-          </div>
-          <Button onClick={applyPattern} disabled={!parseWeeklyPattern(patternDraft).ok}>
-            Simpan
-          </Button>
-        </div>
-        {error && <p className="text-[13px]" style={{ color: 'var(--danger)' }}>{error}</p>}
-        {slots.map((slot) => (
-          <SlotEditor key={slot.id} slot={slot} />
-        ))}
-        <Button className="w-full" onClick={() => archiveTemplate(template.id)}>
-          Arsipkan rencana ini
-        </Button>
+    <section className="border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
+      <input
+        value={plan.name}
+        aria-label="nama rencana"
+        onChange={(e) => void renamePlan(plan.id, e.target.value)}
+        className="touch-target mb-3 w-full border-b bg-transparent py-1 text-[16px] font-semibold outline-none"
+        style={{ borderColor: 'var(--line)' }}
+      />
+      <DayPicker days={plan.days} onToggle={(i) => void setPlanDays(plan.id, toggleDay(plan.days, i))} />
+      <p className="mt-2 text-[12px] leading-relaxed text-ink-2">{formatDays(plan.days)}</p>
+      <div className="mt-4">
+        <SubplanList planId={plan.id} />
       </div>
-    </Section>
+      <Button
+        className="mt-4 w-full"
+        onClick={remove}
+        style={confirming ? { background: 'var(--danger)', color: 'var(--surface)', borderColor: 'var(--danger)' } : undefined}
+      >
+        {confirming ? 'Ketuk lagi untuk menghapus' : 'Hapus rencana ini'}
+      </Button>
+    </section>
   )
 }
 
-function SlotEditor({ slot }: { slot: Slot }) {
-  const items = useLiveQuery(
-    () => db.items.where('slotId').equals(slot.id).sortBy('order'),
-    [slot.id],
-    [],
-  )
+function SubplanList({ planId }: { planId: string }) {
+  const items = useLiveQuery(() => itemsForPlan(planId), [planId], [] as Item[])
   const [draft, setDraft] = useState('')
 
   return (
-    <div className="border p-3" style={{ borderColor: 'var(--hairline)' }}>
-      <div className="mb-2 flex items-center gap-2">
-        <input
-          value={slot.name}
-          onChange={(e) => renameSlot(slot.id, e.target.value)}
-          className="touch-target min-w-0 flex-1 border-b bg-transparent py-1 text-[16px] font-semibold outline-none"
-          style={{ borderColor: 'var(--line)' }}
-        />
-        <Button
-          className="text-[11px] uppercase"
-          variant={slot.kind === 'rest' ? 'solid' : 'ghost'}
-          onClick={() => setSlotKind(slot.id, slot.kind === 'rest' ? 'active' : 'rest')}
-        >
-          {slot.kind === 'rest' ? 'Rest' : 'Aktif'}
-        </Button>
-      </div>
-      <ul className="mb-2">
+    <div>
+      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-2">Subplan</h3>
+      <ul>
         {items.map((item, i) => (
           <li key={item.id} className="flex items-center gap-1 border-b py-1" style={{ borderColor: 'var(--hairline)' }}>
             <input
               defaultValue={item.label}
-              onBlur={(e) => renameItem(item.id, e.target.value)}
+              onBlur={(e) => renameSubplan(item.id, e.target.value)}
               className="touch-target min-w-0 flex-1 bg-transparent text-[16px] outline-none"
             />
-            <button className="touch-target px-1 text-[12px] text-ink-2" onClick={() => moveItem(item.id, -1)} disabled={i === 0} aria-label="Naik">
+            <button className="touch-target px-1 text-[12px] text-ink-2" onClick={() => moveSubplan(item.id, -1)} disabled={i === 0} aria-label="Naik">
               ↑
             </button>
-            <button className="touch-target px-1 text-[12px] text-ink-2" onClick={() => moveItem(item.id, 1)} disabled={i === items.length - 1} aria-label="Turun">
+            <button
+              className="touch-target px-1 text-[12px] text-ink-2"
+              onClick={() => moveSubplan(item.id, 1)}
+              disabled={i === items.length - 1}
+              aria-label="Turun"
+            >
               ↓
             </button>
-            <button className="touch-target px-1 text-[12px]" onClick={() => removeItem(item.id)} aria-label="Hapus">
+            <button className="touch-target px-1 text-[12px]" onClick={() => removeSubplan(item.id)} aria-label={`hapus subplan ${item.label}`}>
               ×
             </button>
           </li>
         ))}
       </ul>
-      <div className="flex gap-2">
+      <div className="mt-2 flex gap-2">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="tambah daftar, mis. Pull-ups"
+          placeholder="tambah subplan, mis. Bab 3 selesai"
           className="touch-target min-w-0 flex-1 border-b bg-transparent py-1 text-[16px] outline-none"
           style={{ borderColor: 'var(--hairline)' }}
         />
         <Button
           onClick={async () => {
-            await addItem(slot.id, draft)
+            await addSubplan(planId, draft)
             setDraft('')
           }}
           disabled={draft.trim().length === 0}

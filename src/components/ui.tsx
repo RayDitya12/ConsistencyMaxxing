@@ -27,8 +27,8 @@ export function Section({ label, children }: { label: string; children: ReactNod
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'solid' | 'ghost' | 'accent' }
 
-export function Button({ variant = 'ghost', className = '', ...rest }: ButtonProps) {
-  const style =
+export function Button({ variant = 'ghost', className = '', style, ...rest }: ButtonProps) {
+  const look =
     variant === 'solid'
       ? { background: 'var(--ink)', color: 'var(--surface)' }
       : variant === 'accent'
@@ -38,7 +38,7 @@ export function Button({ variant = 'ghost', className = '', ...rest }: ButtonPro
     <button
       {...rest}
       className={`touch-target px-4 text-[14px] font-semibold active:opacity-70 disabled:opacity-40 ${className}`}
-      style={style}
+      style={{ ...look, ...style }}
     />
   )
 }
