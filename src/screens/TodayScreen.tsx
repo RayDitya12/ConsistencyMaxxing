@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { X } from 'lucide-react'
 import {
   checksForDate,
   ensureEntry,
@@ -126,7 +127,6 @@ export function TodayScreen() {
           planId={open.planId}
           label={open.label}
           records={media.filter((m) => m.entryId === statuses.get(open.planId)?.entryId)}
-          state={statuses.get(open.planId)?.state ?? 'open'}
           ready={ready}
           boot={boot}
           onClose={() => setOpen(null)}
@@ -218,7 +218,6 @@ function PlanSheet({
   planId,
   label,
   records,
-  state,
   ready,
   boot,
   onClose,
@@ -227,22 +226,36 @@ function PlanSheet({
   planId: string
   label: string
   records: MediaRecord[]
-  state: PlanState
   ready: boolean
   boot: ReturnType<typeof useBoot>
   onClose: () => void
 }) {
+  const [askNoPhoto, setAskNoPhoto] = useState(false)
+
+  function finish() {
+    // Foto sudah menjadi bukti, jadi Selesai cukup menutup. Tanpa foto, status setengah
+    // selesai harus dipilih sadar-sadar karena streak tidak ikut hidup.
+    if (records.length === 0) setAskNoPhoto(true)
+    else onClose()
+  }
+
+  async function finishWithoutPhoto() {
+    await setEntryStatus(date, planId, 'done')
+    announceSaved()
+    onClose()
+  }
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto p-4" style={{ background: 'var(--surface)' }}>
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-4 pb-8">
-        <div className="flex items-end justify-between border-b pb-2" style={{ borderColor: 'var(--hairline)' }}>
-          <div className="min-w-0">
+        <div className="flex items-end gap-3 border-b pb-2" style={{ borderColor: 'var(--hairline)' }}>
+          <IconButton label={`Tutup ${label}`} onClick={onClose}>
+            <X size={20} strokeWidth={1.5} />
+          </IconButton>
+          <div className="min-w-0 flex-1">
             <span className="eyebrow block">Plan hari ini</span>
             <h2 className="truncate text-[20px] font-bold leading-tight">{label}</h2>
           </div>
-          <Button className="text-[12px]" onClick={onClose}>
-            Tutup
-          </Button>
         </div>
         {ready ? (
           <CameraShutter dateKey={date} planId={planId} planLabel={label} />
@@ -256,30 +269,52 @@ function PlanSheet({
         <p className="text-[13px] leading-relaxed text-ink-2">
           Satu foto menutup plan ini. Tanpa foto, plan berhenti di setengah selesai dan streak tidak ikut hidup.
         </p>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={async () => {
-              await setEntryStatus(date, planId, 'done')
-              announceSaved()
-              onClose()
-            }}
-          >
-            Selesai tanpa foto
-          </Button>
-          {state === 'half' && (
-            <Button
-              onClick={async () => {
-                await setEntryStatus(date, planId, null)
-                announceSaved('Centang dicabut')
-                onClose()
-              }}
-            >
-              Cabut centang
-            </Button>
-          )}
-        </div>
+        <Button variant="accent" className="w-full" onClick={finish}>
+          Selesai
+        </Button>
       </div>
+      {askNoPhoto && (
+        <div
+          className="fixed inset-0 z-[55] flex items-center justify-center p-6"
+          style={{ background: 'rgba(0, 0, 0, 0.45)' }}
+          onClick={() => setAskNoPhoto(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Selesai tanpa foto"
+            className="w-full max-w-[360px] rounded-card border p-4"
+            style={{ borderColor: 'var(--hairline)', background: 'var(--raised)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-[17px] font-bold leading-tight">Selesai tanpa foto?</h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
+              Plan ini tercatat setengah selesai. Streak harian dan mingguan tidak ikut hidup.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button variant="accent" onClick={() => void finishWithoutPhoto()}>
+                Selesai tanpa foto
+              </Button>
+              <Button onClick={() => setAskNoPhoto(false)}>Batal</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="touch-target flex shrink-0 items-center justify-center rounded-card"
+      style={{ color: 'var(--ink-2)' }}
+    >
+      {children}
+    </button>
   )
 }
 
