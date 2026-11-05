@@ -64,16 +64,40 @@ export async function mediaBetween(from: string, to: string): Promise<MediaRecor
 
 /** Satu entri per (tanggal, slot); slotId null = bukti level hari. */
 export async function ensureEntry(date: string, slotId: string | null): Promise<Entry> {
-  const forDay = await db.entries.where('date').equals(date).toArray()
-  const hit = forDay.find((e) => e.slotId === slotId)
+  const hit = await entryFor(date, slotId)
   if (hit) return hit
-  const entry: Entry = { id: newId('entry'), date, slotId, note: '', capturedAt: Date.now() }
+  const entry: Entry = { id: newId('entry'), date, slotId, status: null, note: '', capturedAt: Date.now() }
   await db.entries.add(entry)
   return entry
 }
 
+export async function entryFor(date: string, slotId: string | null): Promise<Entry | undefined> {
+  return db.entries.where('date').equals(date).and((e) => e.slotId === slotId).first()
+}
+
 export async function entriesForDate(date: string): Promise<Entry[]> {
   return db.entries.where('date').equals(date).toArray()
+}
+
+/** Semua entri dalam satu rentang tanggal, dipakai menandai grid bulan sekali jalan. */
+export async function entriesBetween(from: string, to: string): Promise<Entry[]> {
+  return db.entries.where('date').between(from, to, true, true).toArray()
+}
+
+/** Setelan plan hari ini: 'done' tanpa foto = centang setengah, 'skip' = dilewati,
+ * null = cabut keputusan. Entri yang sudah punya foto tidak ikut dihapus. */
+export async function setEntryStatus(date: string, slotId: string, status: CheckStatus | null) {
+  const entry = await ensureEntry(date, slotId)
+  const hasPhoto = (await db.media.where('entryId').equals(entry.id).count()) > 0
+  if (status === null && !hasPhoto) {
+    await db.entries.delete(entry.id)
+    return
+  }
+  await db.entries.update(entry.id, { status })
+}
+
+export async function mediaForEntry(entryId: string): Promise<MediaRecord[]> {
+  return db.media.where('entryId').equals(entryId).sortBy('createdAt')
 }
 
 export async function setNote(entryId: string, note: string) {

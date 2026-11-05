@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '../src/db/db'
-import { ensureSlot, loggedDates, setCheck, slotsForDate } from '../src/db/queries'
+import {
+  entriesBetween,
+  entryFor,
+  ensureEntry,
+  ensureSlot,
+  loggedDates,
+  mediaForEntry,
+  setCheck,
+  setEntryStatus,
+  slotsForDate,
+} from '../src/db/queries'
 import { createTemplate } from '../src/plan/actions'
 import { checkKey, type Template } from '../src/db/types'
 import { MemoryBackend, installBackend } from '../src/storage/backend'
@@ -121,11 +131,65 @@ describe('bukti foto', () => {
     const backend = new MemoryBackend()
     installBackend(backend)
     const record = await storeMedia(input)
-    await db.entries.add({ id: 'ent_1', date: input.date, slotId: null, note: '', capturedAt: Date.now() })
+    await db.entries.add({ id: 'ent_1', date: input.date, slotId: null, status: null, note: '', capturedAt: Date.now() })
     await deleteEntry('ent_1')
     expect(await db.media.count()).toBe(0)
     expect(await db.entries.count()).toBe(0)
     expect(await backend.read(record.file)).toBeNull()
     expect((await loggedDates()).has(input.date)).toBe(false)
+  })
+})
+
+describe('status plan harian', () => {
+  beforeEach(clearAll)
+
+  async function addPhoto(entryId: string, date = '2026-11-05') {
+    await db.media.add({
+      id: newId('media'),
+      date,
+      entryId,
+      file: `media/${entryId}.webp`,
+      thumb: `thumb/${entryId}.webp`,
+      mime: 'image/webp',
+      encodeMime: 'image/webp',
+      source: 'viewfinder',
+      bytes: 100,
+      thumbBytes: 10,
+      w: 1080,
+      h: 1350,
+      mode: 'portrait',
+      caption: '5 Nov',
+      createdAt: Date.now(),
+    })
+  }
+
+  it('centang tanpa foto boleh dibuat lalu dicabut sampai entrinya hilang', async () => {
+    await setEntryStatus('2026-11-05', 'slot-a', 'done')
+    expect((await entryFor('2026-11-05', 'slot-a'))?.status).toBe('done')
+    await setEntryStatus('2026-11-05', 'slot-a', null)
+    expect(await entryFor('2026-11-05', 'slot-a')).toBeUndefined()
+    expect(await db.entries.count()).toBe(0)
+  })
+
+  it('mencabut centang tidak membuang entri yang sudah punya foto', async () => {
+    const entry = await ensureEntry('2026-11-05', 'slot-a')
+    await addPhoto(entry.id)
+    await setEntryStatus('2026-11-05', 'slot-a', null)
+    expect(await entryFor('2026-11-05', 'slot-a')).toBeDefined()
+    expect(await mediaForEntry(entry.id)).toHaveLength(1)
+  })
+
+  it('lewati dan selesai berbagi satu entri per plan', async () => {
+    await setEntryStatus('2026-11-05', 'slot-a', 'done')
+    await setEntryStatus('2026-11-05', 'slot-a', 'skip')
+    expect(await db.entries.count()).toBe(1)
+    expect((await entryFor('2026-11-05', 'slot-a'))?.status).toBe('skip')
+  })
+
+  it('rentang tanggal mengambil entri bulan itu saja', async () => {
+    await setEntryStatus('2026-11-05', 'slot-a', 'done')
+    await setEntryStatus('2026-12-01', 'slot-a', 'skip')
+    const rows = await entriesBetween('2026-11-01', '2026-11-30')
+    expect(rows.map((r) => r.date)).toEqual(['2026-11-05'])
   })
 })

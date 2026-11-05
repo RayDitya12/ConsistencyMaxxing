@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { checksForDate, entriesForDate, itemsForSlots, mediaBetween, mediaForDate, slotsForDate } from '../db/queries'
-import { slotCoverage } from '../db/derive'
+import { checksForDate, entriesBetween, entriesForDate, itemsForSlots, mediaBetween, mediaForDate, slotsForDate } from '../db/queries'
+import { monthMarks, planStatuses, slotCoverage, type DayMark, type PlanState } from '../db/derive'
 import { formatLong, monthGrid, todayKey } from '../lib/dates'
 import { WEEKDAY_LABELS } from '../config'
 import { PhotoWall } from '../components/PhotoWall'
 import { Mark } from '../components/ChecklistStrip'
-import { useBlobUrl } from '../storage/useBlobUrl'
-import type { Check, Entry, Item, MediaRecord } from '../db/types'
+import type { Check, Entry, Item } from '../db/types'
 import { Empty, Screen, TopBar } from '../components/ui'
 
 const NO_ITEMS = new Map<string, Item[]>()
 const NO_CHECKS = new Map<string, Check>()
 const NO_ENTRIES: Entry[] = []
+
+const READING: Record<PlanState, string> = {
+  full: 'tercatat',
+  half: 'tanpa foto',
+  skip: 'lewati',
+  open: 'belum',
+}
 
 export function CalendarScreen() {
   const [month, setMonth] = useState<{ y: number; m: number } | null>(null)
@@ -58,15 +64,12 @@ function MonthGrid({
   const from = cells.find((c): c is string => Boolean(c)) ?? ''
   const to = [...cells].reverse().find((c): c is string => Boolean(c)) ?? ''
   const media = useLiveQuery(() => mediaBetween(from, to), [from, to], [])
+  const entries = useLiveQuery(() => entriesBetween(from, to), [from, to], [])
   const [open, setOpen] = useState<string | null>(null)
 
-  const byDate = new Map<string, MediaRecord[]>()
-  for (const record of media) {
-    const list = byDate.get(record.date) ?? []
-    list.push(record)
-    byDate.set(record.date, list)
-  }
-  const loggedThisMonth = byDate.size
+  const marks = monthMarks(entries, media)
+  const daysWithPhoto = [...marks.values()].filter((m) => m.photos > 0).length
+  const halfOnly = [...marks.values()].filter((m) => m.mark === 'half').length
 
   return (
     <Screen>
@@ -77,7 +80,7 @@ function MonthGrid({
             <button type="button" onClick={() => onStep(-1)} className="touch-target px-1 text-[13px]" aria-label="bulan sebelumnya">
               &lsaquo;
             </button>
-            <span className="num text-[12px] text-ink-2">{loggedThisMonth} hari</span>
+            <span className="num text-[12px] text-ink-2">{daysWithPhoto} hari</span>
             <button type="button" onClick={() => onStep(1)} className="touch-target px-1 text-[13px]" aria-label="bulan berikutnya">
               &rsaquo;
             </button>
@@ -98,7 +101,7 @@ function MonthGrid({
               <DayCell
                 key={date}
                 date={date}
-                records={byDate.get(date) ?? []}
+                info={marks.get(date)}
                 isToday={date === today}
                 onOpen={() => setOpen(date)}
               />
@@ -107,8 +110,20 @@ function MonthGrid({
             ),
           )}
         </div>
-        <p className="mt-4 text-[12px] leading-relaxed text-ink-2">
-          Satu kotak terisi berarti hari itu punya minimal satu foto. Kotak kosong tidak dihukum: pola hanya niat.
+        <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] leading-relaxed text-ink-2">
+          <span className="flex items-center gap-2">
+            <Mark status="full" /> ada foto
+          </span>
+          <span className="flex items-center gap-2">
+            <Mark status="half" /> centang tanpa foto ({halfOnly})
+          </span>
+          <span className="flex items-center gap-2">
+            <Mark status="skip" /> semuanya dilewati
+          </span>
+        </p>
+        <p className="mt-2 text-[12px] leading-relaxed text-ink-2">
+          Kotak kosong bukan hari yang gagal, dan streak hanya dihitung dari hari berfoto. Ketuk satu tanggal untuk
+          melihat plan, subplan, dan fotonya.
         </p>
       </div>
       {open && <DaySheet date={open} onClose={() => setOpen(null)} />}
@@ -118,52 +133,54 @@ function MonthGrid({
 
 function DayCell({
   date,
-  records,
+  info,
   isToday,
   onOpen,
 }: {
   date: string
-  records: MediaRecord[]
+  info: DayMark | undefined
   isToday: boolean
   onOpen: () => void
 }) {
-  const newest = records[records.length - 1]
-  const url = useBlobUrl(newest?.thumb)
+  const status = info?.mark ?? ''
   return (
     <button
       type="button"
       onClick={onOpen}
-      aria-label={`${formatLong(date)}: ${records.length} foto`}
-      className="flex aspect-square flex-col overflow-hidden"
+      aria-label={`${formatLong(date)}: ${info ? READING[info.mark] : 'kosong'}${info && info.photos > 1 ? `, ${info.photos} foto` : ''}`}
+      className="flex aspect-square flex-col justify-between p-1"
       style={{
         border: isToday ? '2px solid var(--accent)' : '1px solid var(--hairline)',
-        background: 'var(--surface-2)',
+        background: status === 'full' ? 'var(--surface-2)' : 'transparent',
       }}
     >
-      <span
-        className="num flex h-[18px] shrink-0 items-center justify-between px-1 text-[10px] font-semibold"
-        style={{ color: 'var(--ink-2)' }}
-      >
-        {Number(date.slice(8))}
-        {records.length > 1 && <span>{records.length}</span>}
+      <span className="flex items-baseline justify-between">
+        <span className="num text-[10px] font-semibold" style={{ color: 'var(--ink-2)' }}>
+          {Number(date.slice(8))}
+        </span>
+        {info && info.photos > 0 && (
+          <span className="num text-[9px] leading-none text-ink-2">{info.photos}</span>
+        )}
       </span>
-      {url ? (
-        <img src={url} alt="" className="min-h-0 w-full flex-1 object-cover" />
-      ) : (
-        <span className="min-h-0 flex-1" />
-      )}
+      <Mark status={status} />
     </button>
   )
 }
 
 function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
-  const media = useLiveQuery(() => mediaForDate(date), [date], [])
   const slots = useLiveQuery(() => slotsForDate(date), [date], [])
   const slotIds = slots.map((s) => s.id).join(',')
   const items = useLiveQuery(() => itemsForSlots(slotIds ? slotIds.split(',') : []), [slotIds], NO_ITEMS)
   const checks = useLiveQuery(() => checksForDate(date), [date], NO_CHECKS)
   const entries = useLiveQuery(() => entriesForDate(date), [date], NO_ENTRIES)
-  const note = entries.find((e) => e.slotId === null)?.note ?? ''
+  const media = useLiveQuery(() => mediaForDate(date), [date], [])
+
+  const statuses = planStatuses(slots, entries, media)
+  const dayEntry = entries.find((e) => e.slotId === null)
+  const dayPhotos = media.filter((m) => m.entryId === dayEntry?.id)
+  const strayPhotos = media.filter(
+    (m) => m.entryId !== dayEntry?.id && ![...statuses.values()].some((s) => s.entryId === m.entryId),
+  )
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto p-4" style={{ background: 'var(--surface)' }}>
@@ -174,40 +191,64 @@ function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
             tutup
           </button>
         </div>
-        <div>
-          <Heading>{media.length} foto</Heading>
-          <PhotoWall records={media} emptyText="Hari itu lewat tanpa foto, dan itu dicatat apa adanya." />
-        </div>
-        {note && (
-          <div>
-            <Heading>Catatan</Heading>
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{note}</p>
-          </div>
+        {slots.length === 0 && media.length === 0 && !dayEntry?.note && (
+          <Empty>Hari itu tidak punya plan maupun foto. Kalau memang hari kosong, biarkan kosong.</Empty>
         )}
         {slots.map((slot) => {
+          const status = statuses.get(slot.id)
           const list = items.get(slot.id) ?? []
-          if (list.length === 0) return null
           const labels = new Map(list.map((it) => [it.id, it.label]))
-          const statuses = new Map(list.filter((it) => checks.has(it.id)).map((it) => [it.id, checks.get(it.id)!.status]))
-          const cov = slotCoverage(labels, statuses)
+          const subStatuses = new Map(list.filter((it) => checks.has(it.id)).map((it) => [it.id, checks.get(it.id)!.status]))
+          const cov = slotCoverage(labels, subStatuses)
+          const photos = media.filter((m) => m.entryId === status?.entryId)
           return (
             <div key={slot.id}>
               <Heading>
-                {slot.name} &middot; {cov.done}/{cov.total} selesai &middot; {cov.skip} skip &middot; {cov.untracked.length} belum
+                <span className="flex items-center gap-2">
+                  <Mark status={status?.state ?? 'open'} />
+                  {slot.name}
+                </span>
               </Heading>
-              <ul className="flex flex-col">
-                {list.map((it) => (
-                  <li key={it.id} className="flex items-center gap-3 border-b py-2" style={{ borderColor: 'var(--hairline)' }}>
-                    <Mark status={statuses.get(it.id) ?? ''} />
-                    <span className="flex-1 text-[15px]">{it.label}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="mb-2 text-[12px] uppercase tracking-[0.12em] text-ink-2">
+                {READING[status?.state ?? 'open']}
+                {status && status.photos > 0 ? ` · ${status.photos} foto` : ''}
+                {list.length > 0 ? ` · subplan ${cov.done}/${cov.total}` : ''}
+              </p>
+              {list.length > 0 && (
+                <ul className="flex flex-col">
+                  {list.map((it) => (
+                    <li key={it.id} className="flex items-center gap-3 border-b py-2" style={{ borderColor: 'var(--hairline)' }}>
+                      <Mark status={subStatuses.get(it.id) ?? ''} />
+                      <span className="flex-1 text-[15px]">{it.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {photos.length > 0 && (
+                <div className="mt-3">
+                  <PhotoWall records={photos} />
+                </div>
+              )}
             </div>
           )
         })}
-        {media.length === 0 && slots.length === 0 && (
-          <Empty>Hari ini tidak punya foto maupun jadwal. Kalau memang hari kosong, biarkan kosong.</Empty>
+        {strayPhotos.length > 0 && (
+          <div>
+            <Heading>Foto lain pada hari itu</Heading>
+            <PhotoWall records={strayPhotos} />
+          </div>
+        )}
+        {dayPhotos.length > 0 && (
+          <div>
+            <Heading>Level hari</Heading>
+            <PhotoWall records={dayPhotos} />
+          </div>
+        )}
+        {dayEntry?.note && (
+          <div>
+            <Heading>Catatan</Heading>
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{dayEntry.note}</p>
+          </div>
         )}
       </div>
     </div>

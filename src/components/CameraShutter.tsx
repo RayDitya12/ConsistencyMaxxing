@@ -20,9 +20,12 @@ interface Props {
   dateKey: string
   slotId: string | null
   slotLabel: string | null
+  /** Sheet plan membukakan kamera sendiri; tap row = tap 'Buka kamera'. */
+  autoStart?: boolean
+  onCaptured?: () => void
 }
 
-export function CameraShutter({ dateKey, slotId, slotLabel }: Props) {
+export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, onCaptured }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const cameraRef = useRef<OpenedCamera | null>(null)
   const [stage, setStage] = useState<Stage>('idle')
@@ -31,7 +34,15 @@ export function CameraShutter({ dateKey, slotId, slotLabel }: Props) {
   const [facing, setFacing] = useState<Facing>('environment')
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => () => closeCamera(cameraRef.current), [])
+  const aliveRef = useRef(true)
+
+  useEffect(
+    () => () => {
+      aliveRef.current = false
+      closeCamera(cameraRef.current)
+    },
+    [],
+  )
 
   async function start(next: Facing = facing) {
     setStage('opening')
@@ -46,6 +57,27 @@ export function CameraShutter({ dateKey, slotId, slotLabel }: Props) {
       setStage('error')
     }
   }
+
+  // Sheet plan memanggil getUserMedia saat dibuka, masih di dalam jejak tap pengguna.
+  // Kalau user menutup sheet sebelum izin selesai, streamnya harus langsung dibuang.
+  useEffect(() => {
+    if (!autoStart) return
+    void (async () => {
+      try {
+        const cam = await openCamera('environment', videoRef.current ?? undefined)
+        if (!aliveRef.current) {
+          closeCamera(cam)
+          return
+        }
+        cameraRef.current = cam
+        setStage('live')
+      } catch (err) {
+        if (!aliveRef.current) return
+        setProblem(err instanceof CameraUnavailable ? err.message : (err as Error).message)
+        setStage('error')
+      }
+    })()
+  }, [autoStart])
 
   function stop() {
     closeCamera(cameraRef.current)
@@ -71,6 +103,7 @@ export function CameraShutter({ dateKey, slotId, slotLabel }: Props) {
         height: card.height,
         caption: card.caption,
       })
+      onCaptured?.()
     } catch (err) {
       setProblem((err as Error).message)
       setStage('error')

@@ -9,7 +9,8 @@ import {
   weekStartKey,
   weekdayIndex,
 } from '../src/lib/dates'
-import { buildLoggedSet, dailyStreak, loggedInWeek, slotCoverage, weeklyStreak } from '../src/db/derive'
+import { buildLoggedSet, dailyStreak, loggedInWeek, monthMarks, planStatuses, slotCoverage, weeklyStreak } from '../src/db/derive'
+import type { Entry, MediaRecord } from '../src/db/types'
 
 describe('kunci tanggal lokal', () => {
   it('memakai zona waktu lokal, bukan UTC', () => {
@@ -89,5 +90,72 @@ describe('cakupan slot', () => {
 
   it('hari tanpa satu tick pun bukan hari yang gagal', () => {
     expect(slotCoverage(items, new Map()).untracked).toHaveLength(3)
+  })
+})
+
+describe('keadaan plan per hari', () => {
+  const entry = (over: Partial<Entry> = {}): Entry => ({
+    id: 'entry-1',
+    date: '2026-11-05',
+    slotId: 'slot-a',
+    status: null,
+    note: '',
+    capturedAt: 0,
+    ...over,
+  })
+  const photo = (over: Partial<MediaRecord> = {}): MediaRecord => ({
+    id: 'media-1',
+    date: '2026-11-05',
+    entryId: 'entry-1',
+    file: 'media/a.webp',
+    thumb: 'thumb/a.webp',
+    mime: 'image/webp',
+    encodeMime: 'image/webp',
+    source: 'viewfinder',
+    bytes: 100,
+    thumbBytes: 10,
+    w: 1080,
+    h: 1350,
+    mode: 'portrait',
+    caption: '5 Nov',
+    createdAt: 0,
+    ...over,
+  })
+  const slots = [{ id: 'slot-a' }, { id: 'slot-b' }]
+
+  it('foto mengalahkan centang tanpa foto', () => {
+    const statuses = planStatuses(slots, [entry({ status: 'done' })], [photo()])
+    expect(statuses.get('slot-a')).toEqual({ state: 'full', photos: 1, entryId: 'entry-1' })
+  })
+
+  it('centang tanpa foto terpisah dari plan yang belum disentuh', () => {
+    const statuses = planStatuses(slots, [entry({ status: 'done' }), entry({ id: 'entry-2', slotId: 'slot-b', status: 'skip' })], [])
+    expect(statuses.get('slot-a')?.state).toBe('half')
+    expect(statuses.get('slot-b')?.state).toBe('skip')
+    expect(planStatuses(slots, [], []).get('slot-a')?.state).toBe('open')
+  })
+
+  it('entri level hari tidak dianggap sebuah plan', () => {
+    const statuses = planStatuses(slots, [entry({ slotId: null })], [])
+    expect(statuses.get('slot-a')).toEqual({ state: 'open', photos: 0, entryId: null })
+  })
+
+  it('grid bulan menandai foto lebih tinggi daripada centang setengah', () => {
+    const marks = monthMarks(
+      [entry({ status: 'done' }), entry({ id: 'entry-2', date: '2026-11-06', slotId: 'slot-b', status: 'skip' })],
+      [photo({ date: '2026-11-06', entryId: 'entry-2' })],
+    )
+    expect(marks.get('2026-11-05')).toEqual({ mark: 'half', photos: 0, plans: 1 })
+    expect(marks.get('2026-11-06')).toEqual({ mark: 'full', photos: 1, plans: 1 })
+  })
+
+  it('hari yang hanya berisi skip tetap terbaca sebagai skip', () => {
+    const marks = monthMarks([entry({ slotId: 'slot-b', status: 'skip' })], [])
+    expect(marks.get('2026-11-05')).toEqual({ mark: 'skip', photos: 0, plans: 1 })
+  })
+
+  it('hari tanpa keputusan tidak muncul di peta', () => {
+    expect(monthMarks([entry()], []).size).toBe(0)
+    expect(monthMarks([], [photo()]).get('2026-11-05')).toEqual({ mark: 'full', photos: 1, plans: 0 })
   })
 })

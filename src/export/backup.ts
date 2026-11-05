@@ -157,7 +157,7 @@ export async function applyArchive(parsed: ParsedArchive, mode: 'merge' | 'repla
       report.skipped++
       continue
     }
-    await db.entries.add(entry)
+    await db.entries.add({ ...entry, status: entry.status ?? null })
     report.entries++
   }
   for (const check of data.checks) {

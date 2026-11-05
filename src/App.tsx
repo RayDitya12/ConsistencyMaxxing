@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { PlanScreen } from './screens/PlanScreen'
-import { DataScreen } from './screens/DataScreen'
+import { ProfileScreen } from './screens/ProfileScreen'
 import { TodayScreen } from './screens/TodayScreen'
 import { CalendarScreen } from './screens/CalendarScreen'
 
-type Route = 'today' | 'calendar' | 'plan' | 'data'
+type Route = 'today' | 'calendar' | 'plan' | 'profil'
 
 const ROUTES: { key: Route; label: string }[] = [
   { key: 'today', label: 'Hari ini' },
   { key: 'calendar', label: 'Kalender' },
   { key: 'plan', label: 'Plan' },
-  { key: 'data', label: 'Data' },
+  { key: 'profil', label: 'Profil' },
 ]
 
 function readHash(): Route {
@@ -42,7 +42,7 @@ export default function App() {
         ) : route === 'plan' ? (
           <PlanScreen />
         ) : (
-          <DataScreen />
+          <ProfileScreen />
         )}
       </div>
       <nav

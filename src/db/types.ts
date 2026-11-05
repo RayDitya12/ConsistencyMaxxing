@@ -32,6 +32,8 @@ export interface Entry {
   date: string
   /** null untuk bukti level hari (hari Rest tetap boleh ada foto) */
   slotId: string | null
+  /** status keputusan pada satu plan hari ini. Entri foto tidak membutuhkannya. */
+  status: CheckStatus | null
   note: string
   capturedAt: number
 }

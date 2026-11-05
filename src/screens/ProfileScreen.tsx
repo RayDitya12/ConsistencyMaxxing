@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
-import { bootstrap, currentBoot } from '../storage/bootstrap'
+import { bootstrap, currentBoot, persistNow } from '../storage/bootstrap'
 import { useBoot } from '../storage/useBoot'
 import { formatBytes, monthsOfHeadroom } from '../storage/capability'
 import { loggedDates } from '../db/queries'
-import { applyArchive, buildYearArchive, eraseEverything, readArchive, yearsAvailable, type ParsedArchive } from '../export/backup'
-import { Button, Screen, Section, TopBar } from '../components/ui'
+import { dailyStreak, weeklyStreak } from '../db/derive'
+import { useLoggingDay } from '../lib/useLoggingDay'
+import { WEEK_THRESHOLD } from '../config'
+import {
+  applyArchive,
+  buildYearArchive,
+  eraseEverything,
+  readArchive,
+  yearsAvailable,
+  type ParsedArchive,
+} from '../export/backup'
+import { Button, Screen, Section, Streak, TopBar } from '../components/ui'
 
 function Row({ label, value, warn = false }: { label: string; value: string; warn?: boolean }) {
   return (
@@ -36,7 +46,65 @@ function headroomDisplay(months: number | null): string {
   return `${months} bulan`
 }
 
-export function DataScreen() {
+export function ProfileScreen() {
+  const [view, setView] = useState<'ringkasan' | 'pengaturan'>('ringkasan')
+  if (view === 'pengaturan') return <SettingsView onBack={() => setView('ringkasan')} />
+  return <SummaryView onOpenSettings={() => setView('pengaturan')} />
+}
+
+function SummaryView({ onOpenSettings }: { onOpenSettings: () => void }) {
+  const day = useLoggingDay()
+  const today = day?.today ?? ''
+  const logged = useLiveQuery(async () => loggedDates(), [], null)
+  const counts = useLiveQuery(async () => {
+    const media = await db.media.toArray()
+    return {
+      media: media.length,
+      days: (await loggedDates()).size,
+      templates: await db.templates.filter((t) => t.archivedAt === null).count(),
+    }
+  })
+  const years = useLiveQuery(async () => yearsAvailable(), [], [])
+
+  useEffect(() => {
+    if (!currentBoot()) void bootstrap()
+  }, [])
+
+  return (
+    <Screen>
+      <TopBar
+        title="Profil"
+        right={
+          <Button className="text-[11px] uppercase" onClick={onOpenSettings}>
+            Pengaturan
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex items-end justify-between border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
+          <Streak value={logged ? weeklyStreak(logged, today, WEEK_THRESHOLD) : 0} unit={`minggu (${WEEK_THRESHOLD}/7)`} big />
+          <Streak value={logged ? dailyStreak(logged, today) : 0} unit="hari berfoto" />
+        </div>
+        <Section label="Kamu di aplikasi ini">
+          <Row label="Hari tercatat" value={String(counts?.days ?? 0)} />
+          <Row label="Foto tersimpan" value={String(counts?.media ?? 0)} />
+          <Row label="Plan aktif" value={String(counts?.templates ?? 0)} />
+          <Row label="Tahun punya isi" value={(years ?? []).join(', ') || 'belum ada'} />
+        </Section>
+        <Section label="Perangkat ini">
+          <p className="text-[14px] leading-relaxed text-ink-2">
+            Semua foto, catatan, dan plan hidup di perangkat ini saja. Tidak ada akun, tidak ada server. Yang bisa
+            memindahkan datamu hanyalah arsip .cmx.zip yang kamu ekspor sendiri, jadi ekspor rutin itu bagian dari
+            memakai aplikasi ini, bukan pekerjaan tambahan. Ruang terpakai, izin simpan permanen, ekspor, impor, dan
+            hapus semuanya ada di Pengaturan.
+          </p>
+        </Section>
+      </div>
+    </Screen>
+  )
+}
+
+function SettingsView({ onBack }: { onBack: () => void }) {
   const boot = useBoot()
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState<ParsedArchive | null>(null)
@@ -65,7 +133,14 @@ export function DataScreen() {
   if (!boot)
     return (
       <Screen>
-        <TopBar title="Data" />
+        <TopBar
+          title="Pengaturan"
+          right={
+            <Button className="text-[11px] uppercase" onClick={onBack}>
+              Profil
+            </Button>
+          }
+        />
         <div className="p-4 text-[13px] text-ink-2">Memeriksa penyimpanan perangkat…</div>
       </Screen>
     )
@@ -91,6 +166,15 @@ export function DataScreen() {
     } finally {
       setBusy(false)
     }
+  }
+
+  async function askPersistence() {
+    const granted = await persistNow()
+    setMessage(
+      granted
+        ? 'Izin disimpan diberikan: browser tidak akan membersihkan data ini sendiri.'
+        : 'Browser belum mau memberi izin. Biasanya permintaan otomatis datang setelah aplikasi rutin dipakai.',
+    )
   }
 
   async function pickFile(file: File | undefined) {
@@ -137,7 +221,19 @@ export function DataScreen() {
 
   return (
     <Screen>
-      <TopBar title="Data" right={<Button className="text-[11px] uppercase" onClick={() => void bootstrap()}>Periksa ulang</Button>} />
+      <TopBar
+        title="Pengaturan"
+        right={
+          <span className="flex items-center gap-2">
+            <Button className="text-[11px] uppercase" onClick={() => void bootstrap()}>
+              Periksa ulang
+            </Button>
+            <Button className="text-[11px] uppercase" onClick={onBack}>
+              Profil
+            </Button>
+          </span>
+        }
+      />
       <div className="flex-1 overflow-y-auto">
         <Section label="Penyimpanan di perangkat ini">
           <Row label="Ruang file privat (OPFS)" value={yes(boot.opfs)} warn={!boot.opfs} />
@@ -148,6 +244,17 @@ export function DataScreen() {
           <Row label="Format gambar kartu" value={boot.encode === 'image/webp' ? 'WebP' : 'JPEG'} />
           <Row label="Font kartu siap" value={yes(boot.fontsReady)} warn={!boot.fontsReady} />
           <Row label="File yatim dibersihkan" value={String(boot.orphansRemoved)} />
+          {boot.opfs && !boot.persisted && (
+            <div className="mt-3">
+              <Button disabled={busy} onClick={() => void askPersistence()}>
+                Minta izin simpan permanen
+              </Button>
+              <p className="mt-2 text-[12px] leading-relaxed text-ink-2">
+                Tanpa izin ini browser boleh menghapus datamu sendiri saat perangkat kehabisan ruang. Ekspor tetap
+                wajib.
+              </p>
+            </div>
+          )}
         </Section>
 
         <Section label="Isi arsip">

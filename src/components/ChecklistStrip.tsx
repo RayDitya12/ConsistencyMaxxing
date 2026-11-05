@@ -44,16 +44,40 @@ export function ChecklistStrip({ date, items, checks }: Props) {
 }
 
 export function Mark({ status }: { status: string }) {
-  if (status === 'done')
-    return <span className="block h-[18px] w-[18px] shrink-0" style={{ background: 'var(--ink)' }} />
+  // 'full' dan 'done' sama-sama kotak penuh; 'half' cuma beda warna, sesuai arti
+  // 'centang tanpa foto' sebagai setengah selesai.
+  const filled = status === 'done' || status === 'full'
+  if (filled)
+    return (
+      <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center" style={{ background: 'var(--ink)' }}>
+        <Tick color="var(--surface)" />
+      </span>
+    )
+  if (status === 'half')
+    return (
+      <span
+        className="flex h-[18px] w-[18px] shrink-0 items-center justify-center"
+        style={{ border: '1px solid var(--line)', background: 'var(--surface)' }}
+      >
+        <Tick color="var(--accent)" />
+      </span>
+    )
   if (status === 'skip')
     return (
       <span
         className="flex h-[18px] w-[18px] shrink-0 items-center justify-center text-[13px] leading-none"
-        style={{ border: '1px solid var(--accent)', color: 'var(--accent)' }}
+        style={{ border: '1px solid var(--hairline)', color: 'var(--ink-2)' }}
       >
-        x
+        &ndash;
       </span>
     )
   return <span className="block h-[18px] w-[18px] shrink-0" style={{ border: '1px solid var(--hairline)' }} />
+}
+
+function Tick({ color }: { color: string }) {
+  return (
+    <svg viewBox="0 0 12 12" className="h-[11px] w-[11px]" aria-hidden="true">
+      <path d="M1.5 6.4 4.4 9.3 10.5 2.7" fill="none" stroke={color} strokeWidth="2" strokeLinecap="square" />
+    </svg>
+  )
 }

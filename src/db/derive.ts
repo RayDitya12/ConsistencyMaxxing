@@ -1,4 +1,5 @@
 import { addDays, diffDays, weekStartKey } from '../lib/dates'
+import type { Entry, MediaRecord } from './types'
 
 export interface Coverage {
   total: number
@@ -62,4 +63,76 @@ export function slotCoverage(
     else untracked.push(label)
   }
   return { total: itemLabels.size, done, skip, untracked }
+}
+
+/** 'full' = ada foto, 'half' = dicentang tanpa foto, 'skip' = dilewati, 'open' = belum ada isi. */
+export type PlanState = 'full' | 'half' | 'skip' | 'open'
+
+export interface PlanStatus {
+  state: PlanState
+  photos: number
+  entryId: string | null
+}
+
+const NO_STATUS: PlanStatus = { state: 'open', photos: 0, entryId: null }
+
+/** Keadaan tiap plan pada satu hari. Foto selalu menang atas centang, sesuai aturan streak. */
+export function planStatuses(
+  slots: { id: string }[],
+  entries: Entry[],
+  media: MediaRecord[],
+): Map<string, PlanStatus> {
+  const photosPerEntry = new Map<string, number>()
+  for (const record of media) photosPerEntry.set(record.entryId, (photosPerEntry.get(record.entryId) ?? 0) + 1)
+  const entryOfSlot = new Map<string, Entry>()
+  for (const entry of entries) if (entry.slotId !== null) entryOfSlot.set(entry.slotId, entry)
+  const map = new Map<string, PlanStatus>()
+  for (const slot of slots) {
+    const entry = entryOfSlot.get(slot.id)
+    if (!entry) {
+      map.set(slot.id, NO_STATUS)
+      continue
+    }
+    const photos = photosPerEntry.get(entry.id) ?? 0
+    const state: PlanState =
+      photos > 0 ? 'full' : entry.status === 'done' ? 'half' : entry.status === 'skip' ? 'skip' : 'open'
+    map.set(slot.id, { state, photos, entryId: entry.id })
+  }
+  return map
+}
+
+export interface DayMark {
+  mark: 'full' | 'half' | 'skip'
+  photos: number
+  plans: number
+}
+
+/** Ringkasan sekilas per hari untuk grid bulan: foto menutupi centang setengah, dan 'skip'
+ * hanya muncul kalau hari itu tidak punya bukti lain. */
+export function monthMarks(entries: Entry[], media: MediaRecord[]): Map<string, DayMark> {
+  const photosPerDate = new Map<string, number>()
+  const photosPerEntry = new Map<string, number>()
+  for (const record of media) {
+    photosPerDate.set(record.date, (photosPerDate.get(record.date) ?? 0) + 1)
+    photosPerEntry.set(record.entryId, (photosPerEntry.get(record.entryId) ?? 0) + 1)
+  }
+  const marks = new Map<string, DayMark>()
+  const day = (date: string): DayMark => {
+    let hit = marks.get(date)
+    if (!hit) {
+      hit = { mark: 'skip', photos: photosPerDate.get(date) ?? 0, plans: 0 }
+      marks.set(date, hit)
+    }
+    return hit
+  }
+  for (const date of photosPerDate.keys()) day(date).mark = 'full'
+  for (const entry of entries) {
+    const own = photosPerEntry.get(entry.id) ?? 0
+    if (own === 0 && entry.status === null) continue
+    const current = day(entry.date)
+    current.plans++
+    if (own > 0) current.mark = 'full'
+    else if (entry.status === 'done' && current.mark !== 'full') current.mark = 'half'
+  }
+  return marks
 }
