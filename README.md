@@ -54,18 +54,20 @@ ambil ulang dengan `node scripts/fetch-fonts.mjs`), dan ikon pasang PNG digenera
 sama dengan `public/icons/app-icon.svg` oleh `npm run icons` — jadi mengubah warna merek berarti
 menyunting SVG + script itu lalu menjalankan ulang keduanya.
 
-## Design 2 (branch ini)
+## Arah visual
 
-Branch `design-2` adalah percobaan bahasa visual yang menyalin endcap.design: kertas hangat
-(`#f8f7f3`), tinta hijau-hitam (`#181a17`), aksen biru `#2454df` plus lime `#dce87a`, hairline 1px,
-radius kartu 6px, Hanken Grotesk variable, dan eyebrow uppercase 10px ber-tracking di atas tiap
-judul. Navigasi bawah memakai ikon stroke-1.5 + label, bukan teks saja. `master` masih memegang
-arah "Cetak Swiss" lama; kedua branch bisa dibandingkan dengan `git checkout` lalu `npm run dev`.
+Bahasa visualnya menyalin endcap.design: kertas hangat (`#f8f7f3`), tinta hijau-hitam (`#181a17`),
+aksen biru `#2454df` plus lime `#dce87a`, hairline 1px, radius kartu 6px, Hanken Grotesk variable,
+dan eyebrow uppercase 10px ber-tracking di atas tiap judul. Navigasi bawah memakai ikon stroke-1.5
++ label, bukan teks saja. Angka-angka itu diambil dari stylesheet endcap yang diparse, bukan dari
+deskripsi estetik — dan dua hal dibengkokkan dari aslinya: radius 6px (endcap 3–5px, di ukuran HP
+3px terlihat belum di-styling), dan biru yang di sini memikul penanda status padahal endcap
+menyimpannya untuk tautan saja.
 
-Yang TIDAK ikut berubah: geometri kartu (1080x1080, graysien 320px, penjaga `captionStack`),
-pipeline kamera, skema data, dan seluruh tes. Yang berubah di kartu hanya treatment caption —
-aturan lime dipersingkat jadi 96px, tanggal tidak lagi di-uppercase, dan hitungan minggu naik
-jadi pil aksen.
+Yang tidak boleh ikut berubah saat restyle berikutnya: geometri kartu (1080x1080, graysien 320px,
+penjaga `captionStack`), pipeline kamera, skema data, dan seluruh tes. Yang berubah di kartu hanya
+treatment caption — aturan lime dipersingkat jadi 96px, tanggal tidak lagi di-uppercase, dan
+hitungan minggu naik jadi pil aksen.
 
 Mode gelap didefinisikan di `src/tokens.css` (`prefers-color-scheme`) tapi belum pernah dilihat di
 layar; QA visualnya masih harus dilakukan manusia.
@@ -75,10 +77,11 @@ layar; QA visualnya masih harus dilakukan manusia.
 - **Kartu dibekukan saat memotret.** Yang ikut tema hanya warna merek (aturan dan kotak minggu);
   teks di atas foto selalu putih di atas graysien gelap, karena kartunya dibaca orang lain, bukan
   hanya oleh HP yang memotret.
-- **Arah visual: kertas + tinta, aksen cuma satu.** Lihat bagian "Design 2" di atas. Aturan lama
-  "Cetak Swiss" (radius nol, aturan 2px, oranye `#E8540C` hanya untuk blok besar) masih hidup di
-  `master`. Oranye itu tidak pernah dipakai untuk teks kecil; di design 2 posisi yang sama diisi
-  biru `#2454df`, yang di atas kertas `#f8f7f3` dihitung ~5.7:1 sehingga boleh memuat teks 10px.
+- **Arah visual: kertas + tinta, aksen cuma satu.** Lihat bagian "Arah visual" di atas. Warna merek
+  tidak dipakai untuk teks kecil kecuali kontrasnya dihitung: biru `#2454df` di atas kertas
+  `#f8f7f3` ~5.7:1 sehingga boleh memuat label 10px, `--ink-2` ~5.2:1. Arah lama "Cetak Swiss"
+  (radius nol, aturan 2px, oranye `#E8540C`) ditinggalkan karena oranye itu tidak pernah bisa
+  dipakai di teks kecil. Identitas tetap hidup di kartu foto, chrome-nya diam.
 - **Font diambil dengan script, bukan unduh manual.** `npm run fonts` mengambil satu woff2 variable
   (400..800) sehingga kanvas bisa me-render 600 dan 800 dari satu berkas 34 KB; script menolak
   respons yang bukan `wOF2`. Dulu 400 dan 600 harus dua permintaan terpisah, karena satu permintaan
