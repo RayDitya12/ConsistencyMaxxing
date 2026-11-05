@@ -175,7 +175,7 @@ function SlotEditor({ slot }: { slot: Slot }) {
         <input
           value={slot.name}
           onChange={(e) => renameSlot(slot.id, e.target.value)}
-          className="min-w-0 flex-1 border-b bg-transparent py-1 text-[15px] font-semibold outline-none"
+          className="touch-target min-w-0 flex-1 border-b bg-transparent py-1 text-[16px] font-semibold outline-none"
           style={{ borderColor: 'var(--line)' }}
         />
         <Button
@@ -192,7 +192,7 @@ function SlotEditor({ slot }: { slot: Slot }) {
             <input
               defaultValue={item.label}
               onBlur={(e) => renameItem(item.id, e.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-[14px] outline-none"
+              className="touch-target min-w-0 flex-1 bg-transparent text-[16px] outline-none"
             />
             <button className="touch-target px-1 text-[12px] text-ink-2" onClick={() => moveItem(item.id, -1)} disabled={i === 0} aria-label="Naik">
               ↑
@@ -211,7 +211,7 @@ function SlotEditor({ slot }: { slot: Slot }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="tambah daftar, mis. Pull-ups"
-          className="min-w-0 flex-1 border-b bg-transparent py-1 text-[14px] outline-none"
+          className="touch-target min-w-0 flex-1 border-b bg-transparent py-1 text-[16px] outline-none"
           style={{ borderColor: 'var(--hairline)' }}
         />
         <Button

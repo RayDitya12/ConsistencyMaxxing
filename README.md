@@ -55,6 +55,10 @@ lalu:
 11. "Penyimpanan persisten: tidak" boleh muncul sementara di browser privat; di Chrome normal harus
     "ya" setelah beberapa detik.
 12. Kalau install sebagai aplikasi (Add to Home Screen): ikon harus terlihat, bukan kotak kosong.
+13. Buka sebuah foto di dinding, lalu tekan tombol back Android: catat apa yang terjadi — sekarang
+    overlay hanya punya tombol "tutup", jadi kemungkinan besar yang keluar adalah aplikasinya.
+14. Beri izin kamera lalu tolak sekali lagi: shutter harus menjelaskan jalan cadangannya, bukan
+    diam-diam memakai foto lama dari galeri (itu merusak arti "bukti hari ini").
 
 ## Struktur
 

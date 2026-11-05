@@ -103,7 +103,7 @@ export function TodayScreen() {
               const entry = await ensureEntry(target, null)
               await setNote(entry.id, e.target.value)
             }}
-            className="w-full resize-y border bg-transparent p-3 text-[15px] leading-relaxed outline-none"
+            className="w-full resize-y border bg-transparent p-3 text-[16px] leading-relaxed outline-none"
             style={{ borderColor: 'var(--line)' }}
           />
         </Section>
