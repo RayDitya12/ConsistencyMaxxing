@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { announceSaved } from '../lib/saved'
 import { Button, IconButton, Screen, TopBar } from '../components/ui'
 import {
@@ -161,7 +161,35 @@ function DayPicker({
   )
 }
 
+/** Bentuk baca dari grid hari: kotak yang sama supaya kartu tidak melompat saat masuk mode edit. */
+function DayView({ days }: { days: number[] }) {
+  return (
+    <div className="mt-3">
+      <span className="eyebrow mb-2 block">Hari muncul</span>
+      <div className="grid grid-cols-7 gap-1">
+        {WEEKDAY_LABELS.map((label, i) => (
+          <span
+            key={label}
+            className="flex h-9 items-center justify-center rounded-card border text-[12px] font-bold"
+            style={
+              days.includes(i)
+                ? { background: 'var(--accent-soft)', color: 'var(--ink)', borderColor: 'var(--accent-soft)' }
+                : { color: 'var(--ink-2)', borderColor: 'var(--hairline)' }
+            }
+          >
+            {label}
+          </span>
+        ))}
+      </div>
+      {days.length === 0 && (
+        <p className="mt-2 text-[12px] text-ink-2">Rencana ini belum muncul di hari apa pun.</p>
+      )}
+    </div>
+  )
+}
+
 function PlanCard({ plan }: { plan: Plan }) {
+  const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
   const remove = () => {
@@ -179,12 +207,32 @@ function PlanCard({ plan }: { plan: Plan }) {
     const active = document.activeElement
     if (active instanceof HTMLElement) active.blur()
     announceSaved()
+    setEditing(false)
   }
 
   const all = plan.days.length === ALL_DAYS.length
 
+  if (!editing) {
+    return (
+      <section className="rounded-card border bg-raised p-4" style={{ borderColor: 'var(--hairline)' }}>
+        <div className="flex items-start gap-1">
+          <h2 className="min-w-0 flex-1 pt-2 text-[18px] font-bold leading-tight tracking-[-0.025em]">
+            {plan.name}
+          </h2>
+          <IconButton label={`Edit rencana ${plan.name}`} onClick={() => setEditing(true)}>
+            <Pencil size={17} strokeWidth={1.75} />
+          </IconButton>
+        </div>
+        <DayView days={plan.days} />
+        <div className="mt-3 border-t pt-1" style={{ borderColor: 'var(--hairline)' }}>
+          <SubplanList planId={plan.id} />
+        </div>
+      </section>
+    )
+  }
+
   return (
-    <section className="rounded-card border bg-raised p-4" style={{ borderColor: 'var(--hairline)' }}>
+    <section className="rounded-card border bg-raised p-4" style={{ borderColor: 'var(--accent)' }}>
       <div className="flex items-center gap-1">
         <input
           value={plan.name}
@@ -203,7 +251,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         onAll={() => void setPlanDays(plan.id, all ? [] : [...ALL_DAYS])}
       />
       <div className="mt-4 border-t pt-2" style={{ borderColor: 'var(--hairline)' }}>
-        <SubplanList planId={plan.id} />
+        <SubplanList planId={plan.id} editing />
       </div>
       <div
         className="mt-3 flex items-center justify-between gap-3 border-t pt-3"
@@ -220,64 +268,82 @@ function PlanCard({ plan }: { plan: Plan }) {
   )
 }
 
-function SubplanList({ planId }: { planId: string }) {
+function SubplanList({ planId, editing = false }: { planId: string; editing?: boolean }) {
   const items = useLiveQuery(() => itemsForPlan(planId), [planId], [] as Item[])
   const [draft, setDraft] = useState('')
 
   return (
     <div>
       <h3 className="eyebrow py-2">Subplan · {items.length}</h3>
-      {items.length === 0 && <p className="pb-1 text-[13px] text-ink-2">Belah rencana ini jadi langkah yang bisa difoto.</p>}
-      <ul>
-        {items.map((item, i) => (
-          <li key={item.id} className="flex items-center gap-0.5">
-            <input
-              defaultValue={item.label}
-              aria-label={`nama subplan ${i + 1}`}
-              onBlur={(e) => renameSubplan(item.id, e.target.value)}
-              className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none"
-            />
-            <IconButton label={`Naikkan ${item.label}`} onClick={() => moveSubplan(item.id, -1)} disabled={i === 0}>
-              <ChevronUp size={16} strokeWidth={1.75} />
-            </IconButton>
-            <IconButton
-              label={`Turunkan ${item.label}`}
-              onClick={() => moveSubplan(item.id, 1)}
-              disabled={i === items.length - 1}
-            >
-              <ChevronDown size={16} strokeWidth={1.75} />
-            </IconButton>
-            <IconButton label={`Hapus subplan ${item.label}`} onClick={() => removeSubplan(item.id)}>
-              <X size={16} strokeWidth={1.75} />
-            </IconButton>
-          </li>
-        ))}
-      </ul>
-      <form
-        className="mt-1 flex items-center gap-1 border-t pt-1"
-        style={{ borderColor: 'var(--hairline)' }}
-        onSubmit={async (e) => {
-          e.preventDefault()
-          const added = await addSubplan(planId, draft)
-          if (added) setDraft('')
-        }}
-      >
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Tambah subplan"
-          aria-label="subplan baru"
-          className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none placeholder:text-ink-2"
-        />
-        <IconButton
-          label="Tambah subplan"
-          type="submit"
-          tone="accent"
-          disabled={draft.trim().length === 0}
+      {items.length === 0 && (
+        <p className="pb-1 text-[13px] text-ink-2">
+          {editing
+            ? 'Belah rencana ini jadi langkah yang bisa difoto.'
+            : 'Belum ada subplan. Ketuk edit untuk menambah.'}
+        </p>
+      )}
+      {editing ? (
+        <ul>
+          {items.map((item, i) => (
+            <li key={item.id} className="flex items-center gap-0.5">
+              <input
+                defaultValue={item.label}
+                aria-label={`nama subplan ${i + 1}`}
+                onBlur={(e) => renameSubplan(item.id, e.target.value)}
+                className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none"
+              />
+              <IconButton label={`Naikkan ${item.label}`} onClick={() => moveSubplan(item.id, -1)} disabled={i === 0}>
+                <ChevronUp size={16} strokeWidth={1.75} />
+              </IconButton>
+              <IconButton
+                label={`Turunkan ${item.label}`}
+                onClick={() => moveSubplan(item.id, 1)}
+                disabled={i === items.length - 1}
+              >
+                <ChevronDown size={16} strokeWidth={1.75} />
+              </IconButton>
+              <IconButton label={`Hapus subplan ${item.label}`} onClick={() => removeSubplan(item.id)}>
+                <X size={16} strokeWidth={1.75} />
+              </IconButton>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul>
+          {items.map((item) => (
+            <li key={item.id} className="py-1.5 text-[15px] leading-snug">
+              {item.label}
+            </li>
+          ))}
+        </ul>
+      )}
+      {editing && (
+        <form
+          className="mt-1 flex items-center gap-1 border-t pt-1"
+          style={{ borderColor: 'var(--hairline)' }}
+          onSubmit={async (e) => {
+            e.preventDefault()
+            const added = await addSubplan(planId, draft)
+            if (added) setDraft('')
+          }}
         >
-          <Plus size={17} strokeWidth={2} />
-        </IconButton>
-      </form>
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Tambah subplan"
+            aria-label="subplan baru"
+            className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none placeholder:text-ink-2"
+          />
+          <IconButton
+            label="Tambah subplan"
+            type="submit"
+            tone="accent"
+            disabled={draft.trim().length === 0}
+          >
+            <Plus size={17} strokeWidth={2} />
+          </IconButton>
+        </form>
+      )}
     </div>
   )
 }
