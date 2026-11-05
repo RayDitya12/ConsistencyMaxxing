@@ -4,6 +4,9 @@ export const SCHEMA_VERSION = 2
 
 export const WEEKDAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as const
 
+/** Indeks hari pada Plan.days, Senin lebih dulu. */
+export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6] as const
+
 /** Ambang streak mingguan: minimal sekian hari tercatat dalam satu minggu. */
 export const WEEK_THRESHOLD = 1
 

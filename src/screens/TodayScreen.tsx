@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { X } from 'lucide-react'
 import {
@@ -23,7 +23,7 @@ import { CameraShutter } from '../components/CameraShutter'
 import { ChecklistStrip, Mark } from '../components/ChecklistStrip'
 import { PhotoWall } from '../components/PhotoWall'
 import { announceSaved } from '../lib/saved'
-import { Button, Empty, Screen, Section, Streak, TopBar } from '../components/ui'
+import { Button, Empty, IconButton, Screen, Section, Streak, TopBar } from '../components/ui'
 
 const NO_CHECKS = new Map<string, Check>()
 const NO_ITEMS = new Map<string, Item[]>()
@@ -301,20 +301,6 @@ function PlanSheet({
         </div>
       )}
     </div>
-  )
-}
-
-function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className="touch-target flex shrink-0 items-center justify-center rounded-card"
-      style={{ color: 'var(--ink-2)' }}
-    >
-      {children}
-    </button>
   )
 }
 

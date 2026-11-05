@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { X } from 'lucide-react'
 import { checksForDate, entriesBetween, entriesForDate, itemsForPlans, mediaBetween, mediaForDate, plansForDate } from '../db/queries'
 import { monthMarks, planStatuses, subplanCoverage, type DayMark, type PlanState } from '../db/derive'
 import { formatLong, monthGrid, todayKey } from '../lib/dates'
@@ -8,7 +9,7 @@ import { WEEKDAY_LABELS } from '../config'
 import { PhotoWall } from '../components/PhotoWall'
 import { Mark } from '../components/ChecklistStrip'
 import type { Check, Entry, Item } from '../db/types'
-import { Button, Empty, Screen, TopBar } from '../components/ui'
+import { Empty, IconButton, Screen, TopBar } from '../components/ui'
 
 const NO_ITEMS = new Map<string, Item[]>()
 const NO_CHECKS = new Map<string, Check>()
@@ -185,14 +186,14 @@ function DaySheet({ date, onClose }: { date: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto p-4" style={{ background: 'var(--surface)' }}>
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-5 pb-8">
-        <div className="flex items-end justify-between border-b pb-2" style={{ borderColor: 'var(--hairline)' }}>
-          <div>
+        <div className="flex items-end gap-3 border-b pb-2" style={{ borderColor: 'var(--hairline)' }}>
+          <IconButton label="Tutup arsip hari" onClick={onClose}>
+            <X size={20} strokeWidth={1.5} />
+          </IconButton>
+          <div className="min-w-0 flex-1">
             <span className="eyebrow block">Arsip hari</span>
-            <h2 className="text-[20px] font-bold leading-tight">{formatLong(date)}</h2>
+            <h2 className="truncate text-[20px] font-bold leading-tight">{formatLong(date)}</h2>
           </div>
-          <Button className="text-[12px]" onClick={onClose}>
-            Tutup
-          </Button>
         </div>
         {plans.length === 0 && media.length === 0 && !dayEntry?.note && (
           <Empty>Hari itu tidak punya plan maupun foto. Kalau memang hari kosong, biarkan kosong.</Empty>

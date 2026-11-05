@@ -30,6 +30,21 @@ export function Section({ label, children }: { label: string; children: ReactNod
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'solid' | 'ghost' | 'accent' }
 
+type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { label: string; tone?: 'quiet' | 'accent' | 'danger' }
+
+/** Tombol berisi ikon saja, jadi label wajib supaya pembaca layar masih punya nama. */
+export function IconButton({ label, tone = 'quiet', className = '', style, ...rest }: IconButtonProps) {
+  const color = tone === 'accent' ? 'var(--accent)' : tone === 'danger' ? 'var(--danger)' : 'var(--ink-2)'
+  return (
+    <button
+      {...rest}
+      aria-label={label}
+      className={`touch-target flex shrink-0 items-center justify-center rounded-card transition active:scale-[0.94] disabled:opacity-30 ${className}`}
+      style={{ color, ...style }}
+    />
+  )
+}
+
 export function Button({ variant = 'ghost', className = '', style, ...rest }: ButtonProps) {
   const look =
     variant === 'solid'

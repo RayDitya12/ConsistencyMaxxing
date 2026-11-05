@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react'
 import { announceSaved } from '../lib/saved'
-import { Button, Empty, Field, Screen, Section, TopBar } from '../components/ui'
+import { Button, IconButton, Screen, TopBar } from '../components/ui'
 import {
   addSubplan,
   createPlan,
-  formatDays,
   moveSubplan,
   removePlan,
   removeSubplan,
@@ -16,7 +16,7 @@ import {
 } from '../plan/actions'
 import { seedWorkoutExample } from '../plan/example'
 import { allPlans, itemsForPlan } from '../db/queries'
-import { WEEKDAY_LABELS } from '../config'
+import { ALL_DAYS, WEEKDAY_LABELS } from '../config'
 import type { Item, Plan } from '../db/types'
 
 export function PlanScreen() {
@@ -29,37 +29,40 @@ export function PlanScreen() {
         eyebrow="Waktu yang kamu janjikan"
         title="Plan"
         right={
-          <span className="num rounded-card border px-2 py-1 text-[11px] text-ink-2" style={{ borderColor: 'var(--hairline)' }}>
-            {plans.length}
-          </span>
+          <IconButton
+            label={adding ? 'Tutup form rencana' : 'Tambah rencana'}
+            onClick={() => setAdding((open) => !open)}
+          >
+            {adding ? <X size={20} strokeWidth={1.75} /> : <Plus size={20} strokeWidth={1.75} />}
+          </IconButton>
         }
       />
-      <div className="flex-1 overflow-y-auto pb-4">
-        {adding ? (
-          <NewPlan onDone={() => setAdding(false)} />
-        ) : (
-          <Section label="Buat satu">
-            <Button variant="accent" className="w-full" onClick={() => setAdding(true)}>
-              + Tambah rencana
-            </Button>
-            {plans.length === 0 && (
-              <>
-                <Empty>
-                  Belum ada rencana. Satu rencana itu namanya plus hari-hari ia muncul — semuanya tulisanmu
-                  sendiri, tidak ada yang dibuat otomatis.
-                </Empty>
-                <Button className="w-full" onClick={() => void seedWorkoutExample()}>
-                  Isi contoh: Workout
-                </Button>
-              </>
-            )}
-          </Section>
-        )}
+      <div className="flex flex-col gap-3 overflow-y-auto px-4 pb-6 pt-3">
+        {adding && <NewPlan onDone={() => setAdding(false)} />}
+        {plans.length === 0 && !adding && <NoPlans onAdd={() => setAdding(true)} />}
         {plans.map((plan) => (
           <PlanCard key={plan.id} plan={plan} />
         ))}
       </div>
     </Screen>
+  )
+}
+
+function NoPlans({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="rounded-card border border-dashed p-5" style={{ borderColor: 'var(--hairline)' }}>
+      <h2 className="text-[17px] font-bold leading-tight">Belum ada rencana</h2>
+      <p className="mt-2 text-[14px] leading-relaxed text-ink-2">
+        Satu rencana itu namanya plus hari-hari ia muncul. Semuanya tulisanmu sendiri, tidak ada yang dibuat
+        otomatis.
+      </p>
+      <div className="mt-4 flex flex-col gap-2">
+        <Button variant="accent" onClick={onAdd}>
+          Tambah rencana
+        </Button>
+        <Button onClick={() => void seedWorkoutExample()}>Isi contoh: Workout</Button>
+      </div>
+    </div>
   )
 }
 
@@ -78,59 +81,82 @@ function NewPlan({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <Section label="Rencana baru">
-      <div className="space-y-4">
-        <Field
-          label="Nama rencana"
-          value={name}
-          placeholder="mis. Belajar NLP"
-          autoFocus
-          onChange={(e) => {
-            setName(e.target.value)
-            setError('')
-          }}
-        />
-        <DayPicker
-          days={days}
-          onToggle={(i) => setDays((current) => toggleDay(current, i))}
-        />
-        <p className="text-[12px] leading-relaxed text-ink-2">{formatDays(days)}</p>
-        {error && (
-          <p className="text-[13px]" style={{ color: 'var(--danger)' }}>
-            {error}
-          </p>
-        )}
-        <div className="flex gap-2">
-          <Button variant="accent" className="flex-1" onClick={() => void save()}>
-            Simpan
-          </Button>
-          <Button onClick={onDone}>Batal</Button>
-        </div>
+    <section className="rounded-card border bg-raised p-4" style={{ borderColor: 'var(--accent)' }}>
+      <span className="eyebrow mb-2 block">Rencana baru</span>
+      <input
+        value={name}
+        autoFocus
+        placeholder="Nama rencana"
+        aria-label="Nama rencana"
+        onChange={(e) => {
+          setName(e.target.value)
+          setError('')
+        }}
+        className="w-full bg-transparent text-[19px] font-bold tracking-[-0.025em] outline-none placeholder:text-ink-2"
+      />
+      <DayPicker
+        days={days}
+        onToggle={(i) => setDays((current) => toggleDay(current, i))}
+        onAll={() => setDays(days.length === ALL_DAYS.length ? [] : [...ALL_DAYS])}
+      />
+      {days.length === 0 && <p className="mt-2 text-[12px] text-ink-2">Rencana belum muncul di hari apa pun.</p>}
+      {error && (
+        <p className="mt-2 text-[13px]" style={{ color: 'var(--danger)' }}>
+          {error}
+        </p>
+      )}
+      <div className="mt-4 flex items-center gap-2">
+        <Button variant="accent" className="flex-1" onClick={() => void save()}>
+          Simpan
+        </Button>
+        <Button onClick={onDone}>Batal</Button>
       </div>
-    </Section>
+    </section>
   )
 }
 
-function DayPicker({ days, onToggle }: { days: number[]; onToggle: (index: number) => void }) {
+function DayPicker({
+  days,
+  onToggle,
+  onAll,
+}: {
+  days: number[]
+  onToggle: (index: number) => void
+  onAll: () => void
+}) {
+  const all = days.length === ALL_DAYS.length
   return (
-    <div className="flex flex-wrap gap-1">
-      {WEEKDAY_LABELS.map((label, i) => (
+    <div className="mt-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="eyebrow">Hari muncul</span>
         <button
-          key={label}
           type="button"
-          aria-pressed={days.includes(i)}
-          aria-label={`${label}: ${days.includes(i) ? 'sudah dipilih' : 'belum dipilih'}`}
-          onClick={() => onToggle(i)}
-          className="touch-target min-w-[44px] flex-1 rounded-card border text-[12px] font-bold"
-          style={
-            days.includes(i)
-              ? { background: 'var(--ink)', color: 'var(--surface)', borderColor: 'var(--ink)' }
-              : { background: 'var(--surface)', color: 'var(--ink-2)', borderColor: 'var(--hairline)' }
-          }
+          onClick={onAll}
+          className="eyebrow underline underline-offset-2"
+          style={{ color: 'var(--ink-2)' }}
         >
-          {label}
+          {all ? 'Kosongkan' : 'Setiap hari'}
         </button>
-      ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {WEEKDAY_LABELS.map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={days.includes(i)}
+            aria-label={`${label}: ${days.includes(i) ? 'sudah dipilih' : 'belum dipilih'}`}
+            onClick={() => onToggle(i)}
+            className="flex h-11 items-center justify-center rounded-card border text-[12px] font-bold transition active:scale-[0.96]"
+            style={
+              days.includes(i)
+                ? { background: 'var(--accent)', color: 'var(--accent-ink)', borderColor: 'var(--accent)' }
+                : { color: 'var(--ink-2)', borderColor: 'var(--hairline)' }
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -155,31 +181,39 @@ function PlanCard({ plan }: { plan: Plan }) {
     announceSaved()
   }
 
+  const all = plan.days.length === ALL_DAYS.length
+
   return (
-    <section className="mx-4 my-3 rounded-card border bg-raised p-4" style={{ borderColor: 'var(--hairline)' }}>
-      <span className="eyebrow mb-1 block">Rencana</span>
-      <input
-        value={plan.name}
-        aria-label="nama rencana"
-        onChange={(e) => void renamePlan(plan.id, e.target.value)}
-        className="touch-target mb-3 w-full rounded-card border-b bg-transparent px-0 py-1 text-[19px] font-bold tracking-[-0.025em] outline-none"
-        style={{ borderColor: 'var(--hairline)' }}
+    <section className="rounded-card border bg-raised p-4" style={{ borderColor: 'var(--hairline)' }}>
+      <div className="flex items-center gap-1">
+        <input
+          value={plan.name}
+          aria-label="nama rencana"
+          onChange={(e) => void renamePlan(plan.id, e.target.value)}
+          className="min-w-0 flex-1 self-start border-b bg-transparent pb-1 pt-2 text-[18px] font-bold leading-tight tracking-[-0.025em] outline-none"
+          style={{ borderColor: 'var(--hairline)' }}
+        />
+        <IconButton label={`Hapus rencana ${plan.name}`} onClick={remove} tone={confirming ? 'danger' : 'quiet'}>
+          <Trash2 size={17} strokeWidth={1.75} />
+        </IconButton>
+      </div>
+      <DayPicker
+        days={plan.days}
+        onToggle={(i) => void setPlanDays(plan.id, toggleDay(plan.days, i))}
+        onAll={() => void setPlanDays(plan.id, all ? [] : [...ALL_DAYS])}
       />
-      <DayPicker days={plan.days} onToggle={(i) => void setPlanDays(plan.id, toggleDay(plan.days, i))} />
-      <p className="eyebrow mt-2">{formatDays(plan.days)}</p>
-      <div className="mt-4">
+      <div className="mt-4 border-t pt-2" style={{ borderColor: 'var(--hairline)' }}>
         <SubplanList planId={plan.id} />
       </div>
-      <div className="mt-4 flex gap-2">
-        <Button variant="accent" className="flex-1" onClick={save}>
-          Simpan plan
-        </Button>
-        <Button
-          className="flex-1"
-          onClick={remove}
-          style={confirming ? { background: 'var(--danger)', color: 'var(--surface)', borderColor: 'var(--danger)' } : undefined}
-        >
-          {confirming ? 'Ketuk lagi untuk menghapus' : 'Hapus rencana'}
+      <div
+        className="mt-3 flex items-center justify-between gap-3 border-t pt-3"
+        style={{ borderColor: 'var(--hairline)' }}
+      >
+        <p className="text-[12px] leading-snug" style={{ color: confirming ? 'var(--danger)' : 'var(--ink-2)' }}>
+          {confirming ? 'Ketuk sekali lagi untuk menghapus.' : 'Perubahan tersimpan sendiri.'}
+        </p>
+        <Button variant="accent" onClick={save}>
+          Simpan
         </Button>
       </div>
     </section>
@@ -192,34 +226,36 @@ function SubplanList({ planId }: { planId: string }) {
 
   return (
     <div>
-      <h3 className="eyebrow mb-2">Subplan</h3>
-      <ul className="flex flex-col gap-1">
+      <h3 className="eyebrow py-2">Subplan · {items.length}</h3>
+      {items.length === 0 && <p className="pb-1 text-[13px] text-ink-2">Belah rencana ini jadi langkah yang bisa difoto.</p>}
+      <ul>
         {items.map((item, i) => (
-          <li key={item.id} className="flex items-center gap-1 rounded-card border px-2" style={{ borderColor: 'var(--hairline)' }}>
+          <li key={item.id} className="flex items-center gap-0.5">
             <input
               defaultValue={item.label}
+              aria-label={`nama subplan ${i + 1}`}
               onBlur={(e) => renameSubplan(item.id, e.target.value)}
-              className="touch-target min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+              className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none"
             />
-            <button className="touch-target px-1 text-[13px] text-ink-2" onClick={() => moveSubplan(item.id, -1)} disabled={i === 0} aria-label="Naik">
-              ↑
-            </button>
-            <button
-              className="touch-target px-1 text-[13px] text-ink-2"
+            <IconButton label={`Naikkan ${item.label}`} onClick={() => moveSubplan(item.id, -1)} disabled={i === 0}>
+              <ChevronUp size={16} strokeWidth={1.75} />
+            </IconButton>
+            <IconButton
+              label={`Turunkan ${item.label}`}
               onClick={() => moveSubplan(item.id, 1)}
               disabled={i === items.length - 1}
-              aria-label="Turun"
             >
-              ↓
-            </button>
-            <button className="touch-target px-1 text-[15px] text-ink-2" onClick={() => removeSubplan(item.id)} aria-label={`hapus subplan ${item.label}`}>
-              ×
-            </button>
+              <ChevronDown size={16} strokeWidth={1.75} />
+            </IconButton>
+            <IconButton label={`Hapus subplan ${item.label}`} onClick={() => removeSubplan(item.id)}>
+              <X size={16} strokeWidth={1.75} />
+            </IconButton>
           </li>
         ))}
       </ul>
       <form
-        className="mt-2 flex gap-2"
+        className="mt-1 flex items-center gap-1 border-t pt-1"
+        style={{ borderColor: 'var(--hairline)' }}
         onSubmit={async (e) => {
           e.preventDefault()
           const added = await addSubplan(planId, draft)
@@ -229,13 +265,18 @@ function SubplanList({ planId }: { planId: string }) {
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="tambah subplan"
-          className="touch-target min-w-0 flex-1 rounded-card border bg-transparent px-3 text-[15px] outline-none"
-          style={{ borderColor: 'var(--hairline)' }}
+          placeholder="Tambah subplan"
+          aria-label="subplan baru"
+          className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none placeholder:text-ink-2"
         />
-        <Button type="submit" disabled={draft.trim().length === 0}>
-          Tambah
-        </Button>
+        <IconButton
+          label="Tambah subplan"
+          type="submit"
+          tone="accent"
+          disabled={draft.trim().length === 0}
+        >
+          <Plus size={17} strokeWidth={2} />
+        </IconButton>
       </form>
     </div>
   )
