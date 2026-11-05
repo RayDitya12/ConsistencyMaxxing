@@ -1,157 +1,89 @@
 # ConsistencyMaxxing
 
-Catat konsistensi terhadap rencana harianmu sendiri. Rencana ditulis tangan di tab **Plan**: satu
-nama, lalu hari-hari ia muncul (toggle tujuh hari), plus subplan yang boleh kamu isi per sesi. Tidak
-ada parser pola, tidak ada yang auto-generate. Ketuk satu plan di **Hari ini**, kamera terbuka, satu
-foto menutup plan itu; kartunya (1080x1080, foto penuh satu bingkai dengan tanggal tercetak di atas
-graysien gelap) yang disimpan, bukan foto mentah. Plan yang dicentang tanpa foto tercatat sebagai
-setengah selesai dan tidak menghidupkan streak. Hari yang tidak punya plan memang kosong — kamera
-tidak menawarkan diri.
+PWA untuk mencatat konsistensi terhadap rencana sendiri. Rencana ditulis tangan: satu nama, hari-hari ia
+muncul, plus subplan yang boleh diisi per sesi. Ketuk satu plan di **Hari ini**, kamera terbuka, satu foto
+menutup plan itu. Yang tersimpan adalah kartunya (1080x1080, foto penuh satu bingkai, tanggal tercetak di
+atas graysien gelap), bukan foto mentah. Centang tanpa foto dicatat sebagai setengah selesai dan tidak
+menghidupkan streak.
 
-Semua data hidup di perangkat: Dexie (IndexedDB) untuk baris, OPFS untuk file gambar. Tidak ada
-server, tidak ada akun, tidak ada sinkronisasi. Salinanmu hanya file `.cmx.zip` yang kamu ekspor
-sendiri.
+Semua data hidup di perangkat: Dexie (IndexedDB) untuk baris, OPFS untuk file gambar. Tidak ada server,
+tidak ada akun, tidak ada sinkronisasi. Salinan data hanya file `.cmx.zip` yang kamu ekspor sendiri.
 
 ## Menjalankan
 
 ```
 npm install
-npm run dev        # http://localhost:5173
-npm test           # vitest, 67 test
-npm run lint       # oxlint
-npm run build         # dist/ + service worker
-npm run preview       # sajikan hasil build, cek mode offline di sini
+npm run dev         # http://localhost:5173
+npm test            # vitest, 67 test
+npm run lint        # oxlint
+npm run build       # tsc + dist/ + service worker
+npm run preview     # sajikan hasil build, cek mode offline di sini
 ```
 
-Fontnya satu woff2 variable yang ikut repo (`public/fonts/hanken-grotesk-var.woff2`, 400..800, 34 KB).
-`npm run fonts` hanya perlu dijalankan kalau filenya hilang atau family-nya mau diganti — script itu
-meminta satu rentang weight dalam satu permintaan (tidak seperti dulu, ketika 400 dan 600 harus
-diambil terpisah), mengambil blok `unicode-range: U+0000-00FF`, dan menolak hasil yang bukan woff2
-sejati (magic bytes `wOF2`).
+Font dan ikon ikut repo, jadi dua script berikutnya hanya dijalankan kalau asetnya mau diganti:
+`npm run fonts` mengambil Hanken Grotesk variable (400..800) sebagai satu woff2 dan menolak respons yang
+bukan woff2 sejati; `npm run icons` menggenerate PNG pasang dari geometri `public/icons/app-icon.svg`.
+Mengubah warna merek berarti menyunting SVG itu lalu menjalankan ulang keduanya.
 
-Untuk menguji kamera dari HP, hasil build harus disajikan lewat HTTPS: `getUserMedia` dan OPFS
-dua-duanya diblokir di `http://<ip-laptop>`, jadi di sana shutter dan file picker hilang tanpa
-pesan yang jelas.
+## Uji kamera dari HP
+
+`getUserMedia` dan OPFS dua-duanya diblokir di `http://<ip-laptop>`, jadi hasil build harus disajikan
+lewat HTTPS:
 
 ```
-# Git Bash
-HTTPS=1 npm run preview -- --host --port 4173
-# PowerShell
-$env:HTTPS='1'; npm run preview -- --host --port 4173
+HTTPS=1 npm run preview -- --host --port 4173            # Git Bash
+$env:HTTPS='1'; npm run preview -- --host --port 4173    # PowerShell
 ```
 
-Sertifikatnya dibuat sendiri oleh `scripts/cert.mjs` ke `.certs/` (tidak ikut repo) dan memuat
-nama host mesin ini beserta IP LAN-nya di `subjectAltName`. Itu yang membuat Chrome Android
-menampilkan tombol "Lanjut" di halaman peringatan; sertifikat tanpa SAN ditolak diam-diam dan
-alamatnya tidak bisa dibuka sama sekali. Lanjut saja peringatan itu, lalu buka
-`https://<ip-laptop>:4173`. Tanpa `HTTPS=1` preview berjalan seperti biasa di HTTP. Kalau IP laptop
-berubah, sertifikat dibuat ulang otomatis saat server dinyalakan. Untuk memastikan sertifikat mana
-yang sedang disajikan, jalankan `node scripts/check-cert.mjs` sambil preview jalan — SAN-nya harus
-memuat IP yang kamu ketik di HP.
+`scripts/cert.mjs` membuat sertifikat sendiri ke `.certs/` (tidak ikut repo) dan memasukkan nama host
+mesin beserta IP LAN-nya ke `subjectAltName`; tanpa SAN, Chrome Android menolak alamatnya tanpa tombol
+lanjut. Buka `https://<ip-laptop>:4173` dan lewati saja peringatan sertifikatnya. Sertifikat dibuat ulang
+otomatis kalau IP laptop berubah, dan `node scripts/check-cert.mjs` menunjukkan SAN yang sedang disajikan.
 
-Dua hal yang perlu diketahui soal aset: woff2 variable di `public/fonts/` di-self-host (kalau hilang,
-ambil ulang dengan `node scripts/fetch-fonts.mjs`), dan ikon pasang PNG digenerate dari geometri yang
-sama dengan `public/icons/app-icon.svg` oleh `npm run icons` — jadi mengubah warna merek berarti
-menyunting SVG + script itu lalu menjalankan ulang keduanya.
+## Desain
 
-## Arah visual
+Kertas hangat `#f8f7f3`, tinta `#181a17`, hairline 1px, radius kartu 6px, satu aksen biru `#2454df` dengan
+lime `#dce87a` sebagai tanda. Hanken Grotesk variable dipakai di UI dan di kartu; tiap judul ditandai
+eyebrow uppercase 10px, dan navigasi bawah memakai ikon stroke 1.5 di atas label. Biru boleh memuat teks
+kecil karena kontrasnya di atas kertas 5.7:1. Mode gelap ikut didefinisikan lewat `prefers-color-scheme`.
 
-Bahasa visualnya menyalin endcap.design: kertas hangat (`#f8f7f3`), tinta hijau-hitam (`#181a17`),
-aksen biru `#2454df` plus lime `#dce87a`, hairline 1px, radius kartu 6px, Hanken Grotesk variable,
-dan eyebrow uppercase 10px ber-tracking di atas tiap judul. Navigasi bawah memakai ikon stroke-1.5
-+ label, bukan teks saja. Angka-angka itu diambil dari stylesheet endcap yang diparse, bukan dari
-deskripsi estetik — dan dua hal dibengkokkan dari aslinya: radius 6px (endcap 3–5px, di ukuran HP
-3px terlihat belum di-styling), dan biru yang di sini memikul penanda status padahal endcap
-menyimpannya untuk tautan saja.
+Kartu foto adalah bagian yang tetap: 1080x1080, satu bingkai penuh, caption dibakar di atas graysien
+320px, dan `captionStack()` menolak render kalau caption tidak muat. Foto mentah dibuang, jadi jendela
+bidik harus menampilkan persis crop 1:1 yang akan disimpan. Restyle cukup menyentuh konstanta di
+`src/capture/card.ts` dan token di `src/tokens.css`, tidak pernah pipeline kameranya.
 
-Yang tidak boleh ikut berubah saat restyle berikutnya: geometri kartu (1080x1080, graysien 320px,
-penjaga `captionStack`), pipeline kamera, skema data, dan seluruh tes. Yang berubah di kartu hanya
-treatment caption — aturan lime dipersingkat jadi 96px, tanggal tidak lagi di-uppercase, dan
-hitungan minggu naik jadi pil aksen.
+## Keputusan yang perlu diketahui
 
-Mode gelap didefinisikan di `src/tokens.css` (`prefers-color-scheme`) tapi belum pernah dilihat di
-layar; QA visualnya masih harus dilakukan manusia.
+- Streak harian hanya dihidupkan oleh foto. "Selesai tanpa foto" menandai setengah selesai, bukan selesai.
+- Angka utama adalah streak mingguan dengan ambang satu hari dari tujuh (`WEEK_THRESHOLD` di
+  `src/config.ts`); streak harian yang lebih ketat tetap tampil di sebelahnya.
+- Plan tidak digenerate dan aplikasi berangkat kosong. Jadwal yang dipaksa masuk satu format akan dibuang
+  begitu jadwal aslinya berbeda.
+- Kamera hanya muncul di dalam plan yang diketuk, tapi "pilih dari galeri" tetap tersedia di semua keadaan.
+  Foto galeri ditandai `source: 'fallback'` supaya bedanya masih terbaca di data.
+- Kalender tidak menampilkan thumbnail; 42 gambar per bulan terlalu mahal untuk sekilas lihat. Isi sebuah
+  hari muncul saat tanggalnya diketuk.
+- Izin simpan permanen diminta lewat tombol di Profil -> Pengaturan. Memanggil `persist()` otomatis saat
+  boot membuat Chrome menjadwalkan masa tunggu setelah satu penolakan.
+- Menghapus data dan mengganti perangkat dengan arsip menuntut kata diketik (`HAPUS`, `GANTI`) karena tidak
+  ada dialog konfirmasi browser yang bisa di-Enter.
+- Target interaksinya sekitar tiga detik dari buka aplikasi sampai foto tersimpan.
 
-## Kenapa beberapa keputusan diambil
+## Uji manual di HP
 
-- **Kartu dibekukan saat memotret.** Yang ikut tema hanya warna merek (aturan dan kotak minggu);
-  teks di atas foto selalu putih di atas graysien gelap, karena kartunya dibaca orang lain, bukan
-  hanya oleh HP yang memotret.
-- **Arah visual: kertas + tinta, aksen cuma satu.** Lihat bagian "Arah visual" di atas. Warna merek
-  tidak dipakai untuk teks kecil kecuali kontrasnya dihitung: biru `#2454df` di atas kertas
-  `#f8f7f3` ~5.7:1 sehingga boleh memuat label 10px, `--ink-2` ~5.2:1. Arah lama "Cetak Swiss"
-  (radius nol, aturan 2px, oranye `#E8540C`) ditinggalkan karena oranye itu tidak pernah bisa
-  dipakai di teks kecil. Identitas tetap hidup di kartu foto, chrome-nya diam.
-- **Font diambil dengan script, bukan unduh manual.** `npm run fonts` mengambil satu woff2 variable
-  (400..800) sehingga kanvas bisa me-render 600 dan 800 dari satu berkas 34 KB; script menolak
-  respons yang bukan `wOF2`. Dulu 400 dan 600 harus dua permintaan terpisah, karena satu permintaan
-  untuk dua weight membuat Google Fonts mengembalikan file yang sama dan seluruh teks semi-bold
-  diam-diam jadi regular.
-- **Foto mentah dibuang.** Yang disimpan hanya kartu + thumbnail. Konsekuensinya crop tidak bisa
-  diubah lagi, jadi jendela bidik menunjukkan persis 1:1 yang akan masuk.
-- **Streak mingguan pakai ambang 1 hari dari 7.** Angka itu di `src/config.ts` (`WEEK_THRESHOLD`),
-  masih bisa diganti sebelum dipakai serius.
-- **Centang tanpa foto tetap setengah selesai.** Plan yang dicentang tanpa foto diberi tanda
-  berbingkai aksen (bukan kotak penuh); ia tidak menghidupkan streak harian maupun mingguan. Hanya
-  foto yang dihitung, jadi "sibuk tapi tidak ada bukti" tidak bisa menyamar menjadi konsistensi.
-- **Kalender tidak menampilkan thumbnail.** Kotak hari hanya berisi tanda (foto / centang tanpa
-  foto / dilewati); detail plan, subplan, dan foto per plan muncul saat tanggalnya diketuk.
-  Thumbnail 42 buah per bulan terlalu mahal untuk dibuka sekilas.
-- **Izin simpan permanen diminta lewat tombol.** `persist()` otomatis saat boot membuat Chrome
-  menjadwalkan masa tunggu setelah satu penolakan, sehingga permintaan berikutnya bisa mati
-  berhari-hari. Tombolnya ada di Profil -> Pengaturan.
-- **Plan ditulis tangan, bukan hasil generate.** Aplikasi ini berangkat kosong; satu plan cuma nama
-  plus hari-hari ia muncul. Pola tujuh huruf (`ULURULR`) dulu jadi model data, sekarang hanya
-  contoh yang bisa diketuk sekali di tab Plan. Alasannya: tracker yang memaksa bentuk jadwal tertentu
-  akan dibuang begitu jadwal aslinya berbeda.
-- **Kamera tinggal di dalam plan.** Shutter hanya muncul setelah plan hari itu diketuk, jadi ia
-  requirement untuk mencentang, bukan fitur melayang tanpa fungsi.
-- **Kamera utama, galeri selalu bisa dipilih.** Tombol rana adalah aksi utamanya, tapi "pilih dari
-  galeri" ikut tampil di semua keadaan (diam, bidik, maupun gagal), bukan hanya sebagai hadiah
-  setelah kamera menolak. Foto dari galeri ditandai `source: 'fallback'` supaya bedanya masih bisa
-  dibaca di data, dan kartu yang dibekukan tetap memakai tanggal hari itu.
-- **Hapus dan ganti perangkat butuh mengetik kata** (`HAPUS`, `GANTI`). Tidak ada dialog
-  konfirmasi browser yang bisa di-Enter.
-
-## Menguji di HP dalam 15 menit
-
-Jalankan preview lewat HTTPS seperti di atas, buka dari HP satu jaringan (alamat IP laptop, bukan
-localhost), lalu:
-
-1. Tab **Plan**: ketuk "+ Tambah rencana", tulis satu nama, nyalakan toggle harinya (misalnya
-   Senin untuk "Belajar NLP"), simpan, lalu tambahkan minimal satu subplan. Rencana harus langsung
-   muncul di daftar. Kalau mau cepat, pakai tombol contoh Workout — Upper keluar Senin/Rabu/Jumat,
-   Lower Selasa/Sabtu.
-2. Tab **Hari ini**: hanya plan yang hari itu aktif yang muncul. Hari tanpa plan harus berisi satu
-   baris teks saja — tidak ada shutter, tidak ada kamera yang menggantung.
-3. Ketuk satu plan: kamera langsung diminta. Ikon "pilih dari galeri" harus terlihat di keadaan apa
-   pun — sebelum kamera menyala, saat jendela bidik aktif, dan saat izin ditolak. Kalau kamera tidak
-   mau menyala sama sekali, ada tombol "Coba lagi"; kamera dan OPFS dua-duanya butuh HTTPS.
-4. Foto satu: cek kartu yang muncul identik dengan jendela bidik, tanggal benar, tidak mirror.
-   Row plan-nya berubah jadi "tercatat" dan jumlah fotonya ikut naik.
-5. Putar HP jadi landscape, lalu foto lagi: kartunya tetap 1080x1080 dan crop tidak boleh berpindah —
-   orientasi tidak lagi memilih mode.
-6. Ketuk plan lain, pilih "Catat tanpa foto": tandanya berubah jadi berbingkai aksen "tanpa foto"
-   dan streak tidak bertambah. Tutup tab, buka lagi: status masih sama.
-7. Tekan "lewati" di baris yang sama: plan jadi "dilewati"; tekan lagi untuk membatalkan.
-8. Centang satu subplan, skip satu subplan, sisanya biarkan kosong.
-9. Tab **Kalender**: hari ini bertanda penuh, hari lain sesuai isinya. Ketuk sebuah tanggal: plan,
-   status, subplan, dan foto per plan muncul; satu hari boleh punya lebih dari satu plan.
-10. Matikan WiFi/data seluler, buka aplikasi lagi: harus tetap jalan (service worker), foto baru
-    tetap tersimpan.
-11. Tab **Profil** -> **Pengaturan**: ekspor tahun ini, kirim file `.cmx.zip` ke HP lain atau unduh
-    lagi.
-12. Ketik kata yang salah di "Ganti semua" — tombol harus tetap mati. Ketik `GANTI`, lalu gabungkan
-    arsipmu sendiri: tidak boleh ada duplikat (laporan harus bilang "dilewati").
-13. Klik "Periksa ulang" berkali-kali: angka "Terpakai" tidak boleh naik tiap klik.
-14. "Penyimpanan persisten: tidak" boleh muncul di profil browser baru; pakai tombol "Minta izin
-    simpan permanen" dan catat jawabannya apa adanya.
-15. Ulangi memotret 2 hari berturut-turut, pastikan hitungan streak bertambah.
-16. Kalau install sebagai aplikasi (Add to Home Screen): ikon harus terlihat, bukan kotak kosong.
-17. Buka sebuah foto di dinding, lalu tekan tombol back Android: catat apa yang terjadi — sekarang
-    overlay hanya punya tombol "tutup", jadi kemungkinan besar yang keluar adalah aplikasinya.
-18. Beri izin kamera lalu tolak sekali lagi: sheet plan harus menjelaskan jalan cadangannya, bukan
-    diam-diam memakai foto lama dari galeri (itu merusak arti "bukti hari ini").
+1. Plan: tambah satu rencana, nyalakan toggle harinya, simpan, lalu buat minimal satu subplan.
+2. Hari ini: hanya plan untuk hari itu yang tampil; hari tanpa plan hanya berisi satu baris teks.
+3. Ketuk satu plan: kamera langsung diminta, dan ikon galeri terlihat sebelum, selama, dan sesudah gagal.
+4. Foto satu: kartu identik dengan jendela bidik, tanggal benar, tidak mirror; baris plan jadi tercatat.
+5. Putar HP ke landscape lalu foto lagi: kartu tetap 1080x1080 dan crop tidak berpindah.
+6. Pilih "Selesai tanpa foto" di plan lain: tandanya jadi berbingkai aksen, streak tidak bertambah, dan
+   statusnya masih sama setelah tab ditutup lalu dibuka lagi.
+7. Kalender: hari ini bertanda penuh; ketuk sebuah tanggal untuk melihat plan, status, subplan, dan fotonya.
+8. Matikan WiFi atau data seluler: aplikasi tetap jalan dan foto baru tetap tersimpan.
+9. Pengaturan: ekspor tahun ini, kirim `.cmx.zip` ke perangkat lain, lalu gabungkan. Salah ketik di "Ganti
+   semua" harus membuat tombolnya tetap mati.
+10. Klik "Periksa ulang" berkali-kali: angka Terpakai tidak boleh naik tiap klik.
+11. Install lewat Add to Home Screen: ikon harus terlihat, bukan kotak kosong.
 
 ## Struktur
 
