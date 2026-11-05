@@ -31,7 +31,7 @@ const NO_ENTRIES: Entry[] = []
 const READING: Record<PlanState, string> = {
   full: 'tercatat',
   half: 'tanpa foto',
-  skip: 'lewati',
+  skip: 'dilewati',
   open: 'belum',
 }
 
@@ -184,9 +184,11 @@ function PlanRow({
           lewati
         </button>
       </div>
-      <div className="pb-3">
-        <ChecklistStrip date={date} items={items} checks={checks} />
-      </div>
+      {items.length > 0 && (
+        <div className="pb-3">
+          <ChecklistStrip date={date} items={items} checks={checks} />
+        </div>
+      )}
     </li>
   )
 }

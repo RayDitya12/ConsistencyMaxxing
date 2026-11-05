@@ -34,15 +34,7 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
   const [facing, setFacing] = useState<Facing>('environment')
   const [busy, setBusy] = useState(false)
 
-  const aliveRef = useRef(true)
-
-  useEffect(
-    () => () => {
-      aliveRef.current = false
-      closeCamera(cameraRef.current)
-    },
-    [],
-  )
+  useEffect(() => () => closeCamera(cameraRef.current), [])
 
   async function start(next: Facing = facing) {
     setStage('opening')
@@ -58,25 +50,30 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
     }
   }
 
-  // Sheet plan memanggil getUserMedia saat dibuka, masih di dalam jejak tap pengguna.
-  // Kalau user menutup sheet sebelum izin selesai, streamnya harus langsung dibuang.
+  // Sheet plan memanggil getUserMedia begitu ia dibuka, masih di dalam jejak tap pengguna.
+  // Penanda hidupnya per-permintaan, bukan per-komponen: React boleh memanggil effect ini
+  // dua kali di dev, dan permintaan yang sudah dibuang tidak boleh menutup kamera berikutnya.
   useEffect(() => {
     if (!autoStart) return
+    const jalan = { aktif: true }
     void (async () => {
       try {
         const cam = await openCamera('environment', videoRef.current ?? undefined)
-        if (!aliveRef.current) {
+        if (!jalan.aktif) {
           closeCamera(cam)
           return
         }
         cameraRef.current = cam
         setStage('live')
       } catch (err) {
-        if (!aliveRef.current) return
+        if (!jalan.aktif) return
         setProblem(err instanceof CameraUnavailable ? err.message : (err as Error).message)
         setStage('error')
       }
     })()
+    return () => {
+      jalan.aktif = false
+    }
   }, [autoStart])
 
   function stop() {

@@ -17,7 +17,7 @@ const NO_ENTRIES: Entry[] = []
 const READING: Record<PlanState, string> = {
   full: 'tercatat',
   half: 'tanpa foto',
-  skip: 'lewati',
+  skip: 'dilewati',
   open: 'belum',
 }
 

@@ -1,7 +1,9 @@
 # ConsistencyMaxxing
 
-Catat konsistensi terhadap rencana harianmu sendiri. Satu foto per hari sebagai bukti; kartunya
-(1080x1350 atau 1350x1080, tanggal tercetak di bawah) yang disimpan, bukan foto mentah.
+Catat konsistensi terhadap rencana harianmu sendiri. Ketuk satu plan di **Hari ini**, kamera
+terbuka, satu foto menutup plan itu; kartunya (1080x1350 atau 1350x1080, tanggal tercetak di
+bawah) yang disimpan, bukan foto mentah. Plan yang dicentang tanpa foto tercatat sebagai setengah
+selesai dan tidak menghidupkan streak.
 
 Semua data hidup di perangkat: Dexie (IndexedDB) untuk baris, OPFS untuk file gambar. Tidak ada
 server, tidak ada akun, tidak ada sinkronisasi. Salinanmu hanya file `.cmx.zip` yang kamu ekspor
@@ -12,11 +14,25 @@ sendiri.
 ```
 npm install
 npm run dev        # http://localhost:5173
-npm test           # vitest, 44 test
+npm test           # vitest, 54 test
 npm run lint       # oxlint
 npm run build         # dist/ + service worker
 npm run preview       # sajikan hasil build, cek mode offline di sini
 ```
+
+Untuk menguji kamera dari HP, hasil build harus disajikan lewat HTTPS: `getUserMedia` dan OPFS
+dua-duanya diblokir di `http://<ip-laptop>`, jadi di sana shutter dan file picker hilang tanpa
+pesan yang jelas.
+
+```
+# Git Bash
+HTTPS=1 npm run preview -- --host --port 4173
+# PowerShell
+$env:HTTPS='1'; npm run preview -- --host --port 4173
+```
+
+Sertifikatnya self-sign, jadi browser HP akan menakuti dulu; lanjut saja, lalu buka
+`https://<ip-laptop>:4173`. Tanpa `HTTPS=1` preview berjalan seperti biasa di HTTP.
 
 Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang, ambil ulang dengan
 `node scripts/fetch-fonts.mjs`. Ikon pasang PNG digenerate dari geometri yang sama dengan
@@ -30,6 +46,15 @@ Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang
   diubah lagi, jadi jendela bidik menunjukkan persis 1:1 yang akan masuk.
 - **Streak mingguan pakai ambang 1 hari dari 7.** Angka itu di `src/config.ts` (`WEEK_THRESHOLD`),
   masih bisa diganti sebelum dipakai serius.
+- **Centang tanpa foto tetap setengah selesai.** Plan yang dicentang tanpa foto diberi tanda
+  berwarna oranye; ia tidak menghidupkan streak harian maupun mingguan. Hanya foto yang dihitung,
+  jadi "sibuk tapi tidak ada bukti" tidak bisa menyamar menjadi konsistensi.
+- **Kalender tidak menampilkan thumbnail.** Kotak hari hanya berisi tanda (foto / centang tanpa
+  foto / dilewati); detail plan, subplan, dan foto per plan muncul saat tanggalnya diketuk.
+  Thumbnail 42 buah per bulan terlalu mahal untuk dibuka sekilas.
+- **Izin simpan permanen diminta lewat tombol.** `persist()` otomatis saat boot membuat Chrome
+  menjadwalkan masa tunggu setelah satu penolakan, sehingga permintaan berikutnya bisa mati
+  berhari-hari. Tombolnya ada di Profil -> Pengaturan.
 - **Kamera boleh gagal.** Kalau `getUserMedia` ditolak atau tidak ada kamera, jalur cadangannya
   tetap ada: pilih berkas dari galeri, record-nya ditandai `source: 'fallback'`.
 - **Hapus dan ganti perangkat butuh mengetik kata** (`HAPUS`, `GANTI`). Tidak ada dialog
@@ -37,27 +62,37 @@ Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang
 
 ## Menguji di HP dalam 15 menit
 
-Pasang `npm run preview` di laptop, buka dari HP satu jaringan (alamat IP laptop, bukan localhost),
-lalu:
+Jalankan preview lewat HTTPS seperti di atas, buka dari HP satu jaringan (alamat IP laptop, bukan
+localhost), lalu:
 
 1. Tambah rencana di tab **Plan**, pola `ULURULR`, checklist minimal satu baris. Simpan.
-2. Tab **Hari ini**: shutter harus menyala (kalau mati, baca alasannya — font atau OPFS).
-3. Foto satu: cek kartu yang muncul identik dengan jendela bidik, tanggal benar, tidak mirror.
-4. Putar HP jadi landscape, foto lagi: jendela crop tidak boleh bergeser, kartu jadi 1350x1080.
-5. Centang satu item, skip satu item, sisanya biarkan kosong. Tutup tab, buka lagi: status masih sama.
-6. Tab **Kalender**: hari ini ada thumbnailnya; ketuk kotaknya, cek catatan dan checklist muncul.
-7. Matikan WiFi/data seluler, buka aplikasi lagi: harus tetap jalan (service worker), foto baru tetap
-   tersimpan.
-8. Tab **Data**: ekspor tahun ini, kirim file `.cmx.zip` ke HP lain atau unduh lagi.
-9. Ketik kata yang salah di "Ganti semua" — tombol harus tetap mati. Ketik `GANTI`, lalu gabungkan
-   arsipmu sendiri: tidak boleh ada duplikat (laporan harus bilang "dilewati").
-10. Checklist harian: ulangi 2 hari berturut-turut, pastikan hitungan streak bertambah.
-11. "Penyimpanan persisten: tidak" boleh muncul sementara di browser privat; di Chrome normal harus
-    "ya" setelah beberapa detik.
-12. Kalau install sebagai aplikasi (Add to Home Screen): ikon harus terlihat, bukan kotak kosong.
-13. Buka sebuah foto di dinding, lalu tekan tombol back Android: catat apa yang terjadi — sekarang
+2. Tab **Hari ini**: daftar plan hari itu muncul, semuanya masih "belum". Kamera belum menyala
+   sebelum ada plan yang diketuk — itu memang desainnya.
+3. Ketuk satu plan: kamera harus langsung diminta. Kalau yang muncul pesan izin ditolak, ulangi
+   lewat tombol "Buka kamera"; kamera dan OPFS dua-duanya butuh HTTPS.
+4. Foto satu: cek kartu yang muncul identik dengan jendela bidik, tanggal benar, tidak mirror.
+   Row plan-nya berubah jadi "tercatat" dan jumlah fotonya ikut naik.
+5. Putar HP jadi landscape, foto lagi: jendela crop tidak boleh bergeser, kartu jadi 1350x1080.
+6. Ketuk plan lain, pilih "Catat tanpa foto": tandanya jadi oranye "tanpa foto" dan streak tidak
+   bertambah. Tutup tab, buka lagi: status masih sama.
+7. Tekan "lewati" di baris yang sama: plan jadi "dilewati"; tekan lagi untuk membatalkan.
+8. Centang satu subplan, skip satu subplan, sisanya biarkan kosong.
+9. Tab **Kalender**: hari ini bertanda penuh, hari lain sesuai isinya. Ketuk sebuah tanggal: plan,
+   status, subplan, dan foto per plan muncul; satu hari boleh punya lebih dari satu plan.
+10. Matikan WiFi/data seluler, buka aplikasi lagi: harus tetap jalan (service worker), foto baru
+    tetap tersimpan.
+11. Tab **Profil** -> **Pengaturan**: ekspor tahun ini, kirim file `.cmx.zip` ke HP lain atau unduh
+    lagi.
+12. Ketik kata yang salah di "Ganti semua" — tombol harus tetap mati. Ketik `GANTI`, lalu gabungkan
+    arsipmu sendiri: tidak boleh ada duplikat (laporan harus bilang "dilewati").
+13. Klik "Periksa ulang" berkali-kali: angka "Terpakai" tidak boleh naik tiap klik.
+14. "Penyimpanan persisten: tidak" boleh muncul di profil browser baru; pakai tombol "Minta izin
+    simpan permanen" dan catat jawabannya apa adanya.
+15. Ulangi memotret 2 hari berturut-turut, pastikan hitungan streak bertambah.
+16. Kalau install sebagai aplikasi (Add to Home Screen): ikon harus terlihat, bukan kotak kosong.
+17. Buka sebuah foto di dinding, lalu tekan tombol back Android: catat apa yang terjadi — sekarang
     overlay hanya punya tombol "tutup", jadi kemungkinan besar yang keluar adalah aplikasinya.
-14. Beri izin kamera lalu tolak sekali lagi: shutter harus menjelaskan jalan cadangannya, bukan
+18. Beri izin kamera lalu tolak sekali lagi: sheet plan harus menjelaskan jalan cadangannya, bukan
     diam-diam memakai foto lama dari galeri (itu merusak arti "bukti hari ini").
 
 ## Struktur
@@ -67,7 +102,7 @@ src/capture/    jendela bidik, layout kartu, renderer, caption
 src/db/         skema Dexie + query + metrik turunan (streak, coverage)
 src/export/     arsip .cmx.zip: bangun, baca, gabungkan, ganti
 src/plan/       pola tujuh hari, aksi template/slot/checklist
-src/screens/    Hari ini, Kalender, Plan, Data
+src/screens/    Hari ini, Kalender, Plan, Profil (di dalamnya ada Pengaturan)
 src/storage/    OPFS, kapasitas, bootstrap, sapu file yatim
 test/           vitest + fake-indexeddb (pipeline gambar diuji tanpa kamera)
 ```
