@@ -42,15 +42,21 @@ otomatis kalau IP laptop berubah, dan `node scripts/check-cert.mjs` menunjukkan 
 
 ## Desain
 
-Kertas hangat `#f8f7f3`, tinta `#181a17`, hairline 1px, radius kartu 6px, satu aksen biru `#2454df` dengan
-lime `#dce87a` sebagai tanda. Hanken Grotesk variable dipakai di UI dan di kartu; tiap judul ditandai
-eyebrow uppercase 10px, dan navigasi bawah memakai ikon stroke 1.5 di atas label. Biru boleh memuat teks
-kecil karena kontrasnya di atas kertas 5.7:1. Mode gelap ikut didefinisikan lewat `prefers-color-scheme`.
+Warna diambil dari palet Catppuccin: **Latte** untuk terang, **Mocha** untuk gelap, heksanya apa adanya
+dari `catppuccin/palette` v1.8.0. Latar halaman memakai mantle, kartu memakai base, garis tipis memakai
+surface, dan satu aksen mauve menandai keadaan aktif. Hanken Grotesk variable dipakai di UI dan di kartu;
+tiap judul ditandai eyebrow uppercase 10px, dan navigasi bawah memakai ikon stroke 1.5 di atas label.
+
+Kontras ikut dihitung, bukan diasumsikan: `#8839ef` di atas base 4.79:1 dan di atas mantle 4.45:1, jadi
+mauve tidak dipakai untuk teks kecil di atas chip bertinta (di Mocha 8.64:1, aman). `--accent-soft`
+satu-satunya nilai yang bukan dari palet: 12% mauve di atas base, dihitung sendiri karena Catppuccin tidak
+mendefinisikan warna tinta.
 
 Kartu foto adalah bagian yang tetap: 1080x1080, satu bingkai penuh, caption dibakar di atas graysien
 320px, dan `captionStack()` menolak render kalau caption tidak muat. Foto mentah dibuang, jadi jendela
 bidik harus menampilkan persis crop 1:1 yang akan disimpan. Restyle cukup menyentuh konstanta di
-`src/capture/card.ts` dan token di `src/tokens.css`, tidak pernah pipeline kameranya.
+`src/capture/card.ts` dan token di `src/tokens.css`, tidak pernah pipeline kameranya. Token dibaca kartu
+lewat `getComputedStyle`, jadi warnanya harus heksa literal, bukan `color-mix()`.
 
 ## Keputusan yang perlu diketahui
 

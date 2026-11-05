@@ -27,8 +27,8 @@ export default defineConfig(async () => {
           dir: 'ltr',
           display: 'standalone',
           orientation: 'any',
-          background_color: '#F8F7F3',
-          theme_color: '#F8F7F3',
+          background_color: '#E6E9EF',
+          theme_color: '#E6E9EF',
           start_url: '/',
           scope: '/',
           icons: [

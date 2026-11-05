@@ -62,7 +62,8 @@ export default function App() {
               className="touch-target flex flex-1 flex-col items-center justify-center gap-1 rounded-card py-2 text-[10px] font-semibold tracking-[0.06em] uppercase"
               style={
                 active
-                  ? { background: 'var(--accent-soft)', color: 'var(--accent)' }
+                  ? // Label 10px di atas chip bertinta hanya 4.05:1 di Latte, jadi aktif ditandai lewat latar.
+                    { background: 'var(--accent-soft)', color: 'var(--ink)' }
                   : { color: 'var(--ink-2)' }
               }
             >

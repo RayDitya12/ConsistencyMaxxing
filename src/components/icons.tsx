@@ -8,7 +8,7 @@ const base = {
   strokeLinejoin: 'round',
 } as const
 
-/** Ikon garis 24px, bobot 1.5 — bahasa yang sama dengan panah dan kartu di endcap. */
+/** Ikon garis: viewBox 24, bobot stroke 1.5, ujung dan sudut bulat. */
 export function TodayIcon({ size = 20 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" {...base}>

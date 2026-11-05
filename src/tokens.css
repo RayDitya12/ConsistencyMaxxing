@@ -1,35 +1,38 @@
+/* Catppuccin: Latte untuk terang, Mocha untuk gelap. Nilai heksanya diambil apa adanya dari
+   palet resmi (catppuccin/palette v1.8.0), kecuali --accent-soft yang merupakan 12% mauve
+   di atas base karena paletnya tidak mendefinisikan warna tinta. */
 :root {
   color-scheme: light;
-  --surface: #f8f7f3;
-  --surface-2: #efece3;
-  --raised: #fdfcf8;
-  --ink: #181a17;
-  --ink-2: #5e6258;
-  --line: #181a17;
-  --hairline: #d3d6ca;
-  --accent: #2454df;
-  --accent-ink: #f8f7f3;
-  --accent-soft: #e6ebfb;
-  --acid: #dce87a;
-  --danger: #a41f1f;
-  --shadow: 0 10px 30px rgba(24, 26, 23, 0.12);
+  --surface: #e6e9ef; /* mantle */
+  --surface-2: #dce0e8; /* crust */
+  --raised: #eff1f5; /* base */
+  --ink: #4c4f69; /* text */
+  --ink-2: #5c5f77; /* subtext1 */
+  --line: #4c4f69;
+  --hairline: #ccd0da; /* surface0 */
+  --accent: #8839ef; /* mauve */
+  --accent-ink: #eff1f5;
+  --accent-soft: #e3dbf4;
+  --acid: #40a02b; /* green */
+  --danger: #d20f39; /* red */
+  --shadow: 0 10px 30px rgba(76, 79, 105, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --surface: #141612;
-    --surface-2: #1d201a;
-    --raised: #23261f;
-    --ink: #f0eee4;
-    --ink-2: #9aa091;
-    --line: #f0eee4;
-    --hairline: #343831;
-    --accent: #7aa2ff;
-    --accent-ink: #10130f;
-    --accent-soft: #1b2540;
-    --acid: #cfe063;
-    --danger: #ff8a7a;
-    --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --surface: #181825; /* mantle */
+    --surface-2: #313244; /* surface0 */
+    --raised: #1e1e2e; /* base */
+    --ink: #cdd6f4; /* text */
+    --ink-2: #bac2de; /* subtext1 */
+    --line: #cdd6f4;
+    --hairline: #45475a; /* surface1 */
+    --accent: #cba6f7; /* mauve */
+    --accent-ink: #11111b; /* crust */
+    --accent-soft: #332e46;
+    --acid: #a6e3a1; /* green */
+    --danger: #f38ba8; /* red */
+    --shadow: 0 10px 30px rgba(17, 17, 27, 0.6);
   }
 }

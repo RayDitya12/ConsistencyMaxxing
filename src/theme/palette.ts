@@ -15,18 +15,18 @@ export interface Palette {
 
 /** Cermin dari tokens.css. Dibaca dari CSS supaya warna kartu dan warna UI tidak bisa-drift. */
 const FALLBACK_LIGHT: Palette = {
-  surface: '#f8f7f3',
-  surface2: '#efece3',
-  raised: '#fdfcf8',
-  ink: '#181a17',
-  ink2: '#5e6258',
-  line: '#181a17',
-  hairline: '#d3d6ca',
-  accent: '#2454df',
-  accentInk: '#f8f7f3',
-  accentSoft: '#e6ebfb',
-  acid: '#dce87a',
-  danger: '#a41f1f',
+  surface: '#e6e9ef',
+  surface2: '#dce0e8',
+  raised: '#eff1f5',
+  ink: '#4c4f69',
+  ink2: '#5c5f77',
+  line: '#4c4f69',
+  hairline: '#ccd0da',
+  accent: '#8839ef',
+  accentInk: '#eff1f5',
+  accentSoft: '#e3dbf4',
+  acid: '#40a02b',
+  danger: '#d20f39',
 }
 
 const CSS_NAMES: Record<keyof Palette, string> = {

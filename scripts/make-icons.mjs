@@ -17,9 +17,9 @@ const GRID = [
 const ACCENT = [204, 204]
 const CELL = 104
 const STROKE = 14
-const BG = [0xf8, 0xf7, 0xf3]
-const INK = [0x18, 0x1a, 0x17]
-const BLUE = [0x24, 0x54, 0xdf]
+const BG = [0xef, 0xf1, 0xf5]
+const INK = [0x4c, 0x4f, 0x69]
+const MAUVE = [0x88, 0x39, 0xef]
 
 function render(size) {
   const ss = 4
@@ -49,7 +49,7 @@ function render(size) {
       }
       const aO = Math.min(1, orange / total)
       const aI = Math.min(1 - aO, ink / total)
-      const mix = (c) => BG[c] * (1 - aI - aO) + INK[c] * aI + BLUE[c] * aO
+      const mix = (c) => BG[c] * (1 - aI - aO) + INK[c] * aI + MAUVE[c] * aO
       const i = (py * size + px) * 3
       data[i] = Math.round(mix(0))
       data[i + 1] = Math.round(mix(1))
