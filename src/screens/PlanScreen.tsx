@@ -26,7 +26,7 @@ export function PlanScreen() {
   return (
     <Screen>
       <TopBar
-        eyebrow="Waktu yang kamu janjikan"
+        eyebrow="atur waktu"
         title="Plan"
         right={
           <IconButton
