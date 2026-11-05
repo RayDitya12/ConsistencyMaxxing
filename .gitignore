@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Sertifikat dev dibuat di mesin ini dari IP LAN saat itu; tak layak ikut repo.
+.certs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
