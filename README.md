@@ -31,8 +31,14 @@ HTTPS=1 npm run preview -- --host --port 4173
 $env:HTTPS='1'; npm run preview -- --host --port 4173
 ```
 
-Sertifikatnya self-sign, jadi browser HP akan menakuti dulu; lanjut saja, lalu buka
-`https://<ip-laptop>:4173`. Tanpa `HTTPS=1` preview berjalan seperti biasa di HTTP.
+Sertifikatnya dibuat sendiri oleh `scripts/cert.mjs` ke `.certs/` (tidak ikut repo) dan memuat
+nama host mesin ini beserta IP LAN-nya di `subjectAltName`. Itu yang membuat Chrome Android
+menampilkan tombol "Lanjut" di halaman peringatan; sertifikat tanpa SAN ditolak diam-diam dan
+alamatnya tidak bisa dibuka sama sekali. Lanjut saja peringatan itu, lalu buka
+`https://<ip-laptop>:4173`. Tanpa `HTTPS=1` preview berjalan seperti biasa di HTTP. Kalau IP laptop
+berubah, sertifikat dibuat ulang otomatis saat server dinyalakan. Untuk memastikan sertifikat mana
+yang sedang disajikan, jalankan `node scripts/check-cert.mjs` sambil preview jalan — SAN-nya harus
+memuat IP yang kamu ketik di HP.
 
 Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang, ambil ulang dengan
 `node scripts/fetch-fonts.mjs`. Ikon pasang PNG digenerate dari geometri yang sama dengan
@@ -55,8 +61,10 @@ Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang
 - **Izin simpan permanen diminta lewat tombol.** `persist()` otomatis saat boot membuat Chrome
   menjadwalkan masa tunggu setelah satu penolakan, sehingga permintaan berikutnya bisa mati
   berhari-hari. Tombolnya ada di Profil -> Pengaturan.
-- **Kamera boleh gagal.** Kalau `getUserMedia` ditolak atau tidak ada kamera, jalur cadangannya
-  tetap ada: pilih berkas dari galeri, record-nya ditandai `source: 'fallback'`.
+- **Kamera utama, galeri selalu bisa dipilih.** Tombol rana adalah aksi utamanya, tapi "pilih dari
+  galeri" ikut tampil di semua keadaan (diam, bidik, maupun gagal), bukan hanya sebagai hadiah
+  setelah kamera menolak. Foto dari galeri ditandai `source: 'fallback'` supaya bedanya masih bisa
+  dibaca di data, dan kartu yang dibekukan tetap memakai tanggal hari itu.
 - **Hapus dan ganti perangkat butuh mengetik kata** (`HAPUS`, `GANTI`). Tidak ada dialog
   konfirmasi browser yang bisa di-Enter.
 
@@ -68,8 +76,10 @@ localhost), lalu:
 1. Tambah rencana di tab **Plan**, pola `ULURULR`, checklist minimal satu baris. Simpan.
 2. Tab **Hari ini**: daftar plan hari itu muncul, semuanya masih "belum". Kamera belum menyala
    sebelum ada plan yang diketuk — itu memang desainnya.
-3. Ketuk satu plan: kamera harus langsung diminta. Kalau yang muncul pesan izin ditolak, ulangi
-   lewat tombol "Buka kamera"; kamera dan OPFS dua-duanya butuh HTTPS.
+3. Ketuk satu plan: kamera harus langsung diminta. "pilih dari galeri" harus terlihat di keadaan
+   apa pun — sebelum kamera menyala, saat jendela bidik aktif, dan saat izin ditolak. Kalau kamera
+   tidak mau menyala sama sekali, ulangi lewat tombol "Buka kamera"; kamera dan OPFS dua-duanya
+   butuh HTTPS.
 4. Foto satu: cek kartu yang muncul identik dengan jendela bidik, tanggal benar, tidak mirror.
    Row plan-nya berubah jadi "tercatat" dan jumlah fotonya ikut naik.
 5. Putar HP jadi landscape, foto lagi: jendela crop tidak boleh bergeser, kartu jadi 1350x1080.

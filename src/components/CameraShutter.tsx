@@ -79,6 +79,7 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
   function stop() {
     closeCamera(cameraRef.current)
     cameraRef.current = null
+    setProblem('')
     setStage('idle')
   }
 
@@ -116,7 +117,7 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
   }
 
   async function viaFile() {
-    const blob = await pickViaInput(facing)
+    const blob = await pickViaInput()
     if (blob) await compose(blob, 'fallback')
   }
 
@@ -169,24 +170,34 @@ export function CameraShutter({ dateKey, slotId, slotLabel, autoStart = false, o
               />
             </button>
           </div>
-          <div className="flex justify-center">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <Button onClick={stop}>Tutup kamera</Button>
+            <GalleryButton onPick={viaFile} busy={busy} />
           </div>
         </div>
       ) : (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button variant="accent" disabled={stage === 'opening'} onClick={() => start()}>
-            {stage === 'opening' ? 'Membuka…' : 'Buka kamera'}
+            {stage === 'opening' ? 'Membuka…' : stage === 'error' ? 'Coba lagi' : 'Buka kamera'}
           </Button>
-          {stage === 'error' && (
-            <>
-              <Button onClick={() => start()}>Coba lagi</Button>
-              <Button onClick={viaFile}>Pilih berkas</Button>
-            </>
-          )}
+          <GalleryButton onPick={viaFile} busy={stage === 'opening' || busy} />
         </div>
       )}
     </div>
+  )
+}
+
+// Kamera tetap jalur utama; ini opsi yang selalu ada, bukan hadiah setelah kamera gagal.
+function GalleryButton({ onPick, busy }: { onPick: () => void; busy: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onPick}
+      className="touch-target px-2 text-[11px] uppercase tracking-[0.14em] text-ink-2 disabled:opacity-40"
+    >
+      pilih dari galeri
+    </button>
   )
 }
 
