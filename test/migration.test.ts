@@ -43,8 +43,7 @@ async function seedLegacy() {
     bytes: 5,
     thumbBytes: 5,
     w: 1080,
-    h: 1350,
-    mode: 'portrait',
+    h: 1080,
     caption: 'Kam 03.11.26',
     createdAt: 3,
   })

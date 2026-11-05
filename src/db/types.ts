@@ -50,7 +50,6 @@ export interface MediaRecord {
   thumbBytes: number
   w: number
   h: number
-  mode: 'portrait' | 'landscape'
   caption: string
   createdAt: number
 }

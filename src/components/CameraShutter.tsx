@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { CardMode } from '../config'
 import { renderCapture } from '../capture/pipeline'
 import {
   CameraUnavailable,
@@ -32,7 +31,6 @@ export function CameraShutter({ dateKey, planId, planLabel }: Props) {
   const cameraRef = useRef<OpenedCamera | null>(null)
   const [stage, setStage] = useState<Stage>('opening')
   const [problem, setProblem] = useState('')
-  const [mode, setMode] = useState<CardMode>('portrait')
   const [facing, setFacing] = useState<Facing>('environment')
   const [busy, setBusy] = useState(false)
 
@@ -81,7 +79,7 @@ export function CameraShutter({ dateKey, planId, planLabel }: Props) {
     setBusy(true)
     setProblem('')
     try {
-      const card = await renderCapture({ blob, mode, dateKey, planLabel, weekStreak: 0, dailyStreak: 0 })
+      const card = await renderCapture({ blob, dateKey, planLabel, weekStreak: 0, dailyStreak: 0 })
       const entry = await ensureEntry(dateKey, planId)
       await storeMedia({
         date: dateKey,
@@ -91,7 +89,6 @@ export function CameraShutter({ dateKey, planId, planLabel }: Props) {
         thumb: card.thumb,
         encodeMime: card.encodeMime,
         source,
-        mode: card.mode,
         width: card.width,
         height: card.height,
         caption: card.caption,
@@ -139,16 +136,6 @@ export function CameraShutter({ dateKey, planId, planLabel }: Props) {
                 </>
               )}
             </div>
-          )}
-          {stage === 'live' && (
-            <button
-              type="button"
-              onClick={() => setMode((m) => (m === 'portrait' ? 'landscape' : 'portrait'))}
-              className="absolute right-2 top-2 touch-target px-2 text-[11px] uppercase tracking-[0.14em]"
-              style={{ background: 'var(--surface)', color: 'var(--ink)' }}
-            >
-              {mode === 'portrait' ? 'tegak' : 'tidur'}
-            </button>
           )}
         </div>
       </div>

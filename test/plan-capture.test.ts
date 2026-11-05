@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { buildFileName, extensionFor, mediaPath, sanitizeLabel, thumbPath } from '../src/lib/filename'
 import { computeLayout, coverRect } from '../src/capture/layout'
-import { buildCaption, truncate, wrapLines } from '../src/capture/caption'
-import { thumbSize } from '../src/capture/card'
+import { buildCaption, truncate, wrapLines, type Caption } from '../src/capture/caption'
+import { captionStack, thumbSize } from '../src/capture/card'
 import { CAPTION_FIELDS } from '../src/capture/caption'
+import { APP_NAME } from '../src/config'
 
 describe('nama file sebagai metadata yang manusiawi', () => {
   it('membuang karakter ilegal path dan emoji', () => {
@@ -29,27 +30,28 @@ describe('nama file sebagai metadata yang manusiawi', () => {
 })
 
 describe('geometri kartu', () => {
-  it('jendela foto 1:1 dan ukurannya sama di kedua mode', () => {
-    const p = computeLayout('portrait')
-    const l = computeLayout('landscape')
-    expect(p.photo.w).toBe(p.photo.h)
-    expect(l.photo).toMatchObject({ w: p.photo.w, h: p.photo.h })
-    expect(p.band.h).toBe(p.card.h - p.photo.h)
-    expect(l.band.w).toBe(l.card.w - l.photo.w)
+  it('kartu bujur sangkar dan foto mengisi seluruh kanvas', () => {
+    const layout = computeLayout()
+    expect(layout.card).toEqual({ w: 1080, h: 1080 })
+    expect(layout.photo).toEqual({ x: 0, y: 0, w: 1080, h: 1080 })
   })
 
-  it('pita tidak pernah tumpang tindih dengan foto', () => {
-    for (const mode of ['portrait', 'landscape'] as const) {
-      const layout = computeLayout(mode)
-      const overlap =
-        Math.max(0, Math.min(layout.photo.x + layout.photo.w, layout.band.x + layout.band.w) - Math.max(layout.photo.x, layout.band.x)) *
-        Math.max(0, Math.min(layout.photo.y + layout.photo.h, layout.band.y + layout.band.h) - Math.max(layout.photo.y, layout.band.y))
-      expect(overlap).toBe(0)
-    }
+  it('graysien duduk di tepi bawah dan tidak pernah keluar kartu', () => {
+    const layout = computeLayout()
+    expect(layout.scrim.x).toBe(0)
+    expect(layout.scrim.y + layout.scrim.h).toBe(layout.card.h)
+    expect(layout.scrim.h).toBeLessThan(layout.card.h)
   })
 
-  it('cover crop selalu menutupi jendela, termasuk untuk sumber sangat lebar', () => {
-    const layout = computeLayout('portrait')
+  it('tumpukan caption maksimum tetap muat di dalam graysien', () => {
+    const full: Caption = { headline: 'Kam 05.11.26', slot: 'Belajar Algoritma', week: 'W14', brand: APP_NAME }
+    // dua baris nama plan adalah kasus terburuk yang renderer boleh hasilkan
+    expect(captionStack(full, 2)).toBeLessThanOrEqual(computeLayout().scrim.h)
+    expect(captionStack({ headline: '', slot: null, week: null, brand: null }, 0)).toBe(48)
+  })
+
+  it('cover crop selalu menutupi kartu, termasuk untuk sumber sangat lebar', () => {
+    const layout = computeLayout()
     const rect = coverRect(4000, 900, layout.photo)
     expect(rect.x).toBeLessThanOrEqual(0)
     expect(rect.x + rect.w).toBeGreaterThanOrEqual(layout.photo.w)
@@ -57,12 +59,12 @@ describe('geometri kartu', () => {
     expect(rect.y + rect.h).toBeGreaterThanOrEqual(layout.photo.h)
   })
 
-  it('thumbnail menjaga rasio kartu, bukan dipaksa jadi bujur sangkar', () => {
-    expect(thumbSize(1080, 1350, 320)).toEqual({ w: 256, h: 320 })
-    expect(thumbSize(1350, 1080, 320)).toEqual({ w: 320, h: 256 })
+  it('thumbnail ikut rasio kartu', () => {
+    expect(thumbSize(1080, 1080, 320)).toEqual({ w: 320, h: 320 })
   })
 
-  it('pan menggeser hanya sumbu yang punya ruang, zoom membuka dua-duanya', () => {    const layout = computeLayout('portrait')
+  it('pan menggeser hanya sumbu yang punya ruang, zoom membuka dua-duanya', () => {
+    const layout = computeLayout()
     const base = coverRect(1600, 1200, layout.photo)
     const panned = coverRect(1600, 1200, layout.photo, { x: 1, y: 1 })
     expect(panned.x).toBeGreaterThan(base.x)

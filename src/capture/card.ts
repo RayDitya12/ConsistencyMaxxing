@@ -8,7 +8,7 @@ import type { Palette } from '../theme/palette'
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
 
 const PAD = 48
-const RULE = 2
+const GAP = 14
 
 interface TypeSpec {
   headline: string
@@ -16,8 +16,12 @@ interface TypeSpec {
   brand: string
 }
 
-const PORTRAIT_TYPE: TypeSpec = { headline: '600 92px', slot: '400 40px', brand: '400 28px' }
-const LANDSCAPE_TYPE: TypeSpec = { headline: '600 46px', slot: '400 30px', brand: '400 22px' }
+const TYPE: TypeSpec = { headline: '600 84px', slot: '400 36px', brand: '400 26px' }
+const LINE_H = { headline: 96, slot: 48, brand: 34 }
+
+/** Caption dicetak di atas foto, jadi warnanya tidak ikut tema: graysien selalu gelap dan teks
+ * selalu terang, di terang maupun gelap. Hanya aksen kotak minggu yang mengambil warna tema. */
+const ON_PHOTO = { ink: '#ffffff', ink2: 'rgba(255,255,255,0.8)' }
 
 export interface DrawOptions {
   pan?: { x: number; y: number }
@@ -32,6 +36,16 @@ export interface RenderedCard {
   height: number
 }
 
+/** Teks caption harus habis di dalam graysien. Field baru dinyalakan lewat caption.ts dan test
+ * geometri menahan tumpukan maksimum, jadi yang gagal adalah build, bukan kartu user. */
+export function captionStack(caption: Caption, slotLines: number): number {
+  const heights: number[] = []
+  if (slotLines) heights.push(slotLines * LINE_H.slot)
+  if (caption.headline) heights.push(LINE_H.headline)
+  if (caption.brand) heights.push(LINE_H.brand)
+  return PAD + heights.reduce((sum, h) => sum + h, 0) + Math.max(0, heights.length - 1) * GAP
+}
+
 export function drawCard(
   source: { width: number; height: number },
   draw: (ctx: Ctx, rect: { x: number; y: number; w: number; h: number }) => void,
@@ -40,87 +54,75 @@ export function drawCard(
   options: DrawOptions,
 ): RenderedCard {
   const { canvas, ctx } = makeCanvas(layout.card.w, layout.card.h)
-  const p = options.palette
-  const photo = layout.photo
-  const band = layout.band
-
-  ctx.fillStyle = p.surface
-  ctx.fillRect(0, 0, layout.card.w, layout.card.h)
-
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(photo.x, photo.y, photo.w, photo.h)
-  ctx.clip()
   draw(
     ctx,
-    coverRect(source.width, source.height, photo, options.pan ?? { x: 0, y: 0 }, options.zoom ?? 1),
+    coverRect(source.width, source.height, layout.photo, options.pan ?? { x: 0, y: 0 }, options.zoom ?? 1),
   )
-  ctx.restore()
 
-  ctx.fillStyle = p.line
-  if (layout.mode === 'portrait') ctx.fillRect(band.x, band.y, band.w, RULE)
-  else ctx.fillRect(photo.x - RULE, 0, RULE, layout.card.h)
+  const scrim = ctx.createLinearGradient(0, layout.scrim.y, 0, layout.card.h)
+  scrim.addColorStop(0, 'rgba(0,0,0,0)')
+  scrim.addColorStop(0.55, 'rgba(0,0,0,0.5)')
+  scrim.addColorStop(1, 'rgba(0,0,0,0.82)')
+  ctx.fillStyle = scrim
+  ctx.fillRect(0, layout.scrim.y, layout.card.w, layout.scrim.h)
 
-  drawCaption(ctx, caption, layout, options.palette, layout.mode === 'portrait' ? PORTRAIT_TYPE : LANDSCAPE_TYPE)
+  ctx.font = font(TYPE.slot)
+  const slotLines = caption.slot ? wrapLines(ctx, caption.slot, layout.card.w - PAD * 2, 2) : []
+  const stack = captionStack(caption, slotLines.length)
+  if (stack > layout.scrim.h) throw new Error(`Caption ${stack}px tidak muat di graysien ${layout.scrim.h}px.`)
+  drawCaption(ctx, caption, layout, options.palette, slotLines)
   return { canvas, ctx, width: layout.card.w, height: layout.card.h }
 }
 
-function drawCaption(ctx: Ctx, caption: Caption, layout: CardLayout, p: Palette, type: TypeSpec) {
-  const band = layout.band
-  const innerWidth = band.w - PAD * 2
+/** Semua baris teks ditumpuk dari dasar graysien ke atas: nama plan kecil, tanggal besar, merek
+ * paling bawah. `wrapLines` dievaluate di luar supaya tingginya bisa diperiksa lebih dulu. */
+function drawCaption(
+  ctx: Ctx,
+  caption: Caption,
+  layout: CardLayout,
+  p: Palette,
+  slotLines: string[],
+): void {
   ctx.textBaseline = 'top'
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'
+  ctx.shadowBlur = 16
 
-  if (layout.mode === 'portrait') {
-    let y = band.y + 40
-    ctx.font = font(type.headline)
-    ctx.fillStyle = p.ink
-    ctx.fillText(caption.headline, band.x + PAD, y)
-    y += 108
-    if (caption.slot) {
-      ctx.font = font(type.slot)
-      ctx.fillStyle = p.ink2
-      const [line] = wrapLines(ctx, caption.slot, innerWidth - (caption.week ? 160 : 0), 1)
-      ctx.fillText(line ?? '', band.x + PAD, y)
+  let y = layout.card.h - captionStack(caption, slotLines.length)
+  const headlineTop = y + (slotLines.length ? slotLines.length * LINE_H.slot + GAP : 0)
+
+  if (slotLines.length) {
+    ctx.font = font(TYPE.slot)
+    ctx.fillStyle = ON_PHOTO.ink2
+    for (const line of slotLines) {
+      ctx.fillText(line, PAD, y)
+      y += LINE_H.slot
     }
-    if (caption.brand) {
-      ctx.font = font(type.brand)
-      ctx.fillStyle = p.ink2
-      ctx.textAlign = 'right'
-      ctx.fillText(caption.brand, band.x + band.w - PAD, band.y + band.h - 48)
-      ctx.textAlign = 'left'
-    }
-    if (caption.week) drawWeekBox(ctx, caption.week, band.x + band.w - PAD - 150, band.y + 44, p)
-    return
+    y += GAP
   }
 
-  let y = 56
-  ctx.font = font(type.headline)
-  ctx.fillStyle = p.ink
-  for (const line of wrapLines(ctx, caption.headline, band.w - PAD, 2)) {
-    ctx.fillText(line, band.x + PAD / 2, y)
-    y += 58
+  if (caption.headline) {
+    ctx.font = font(TYPE.headline)
+    ctx.fillStyle = ON_PHOTO.ink
+    ctx.fillText(caption.headline, PAD, y)
+    y += LINE_H.headline + GAP
   }
-  if (caption.week) drawWeekBox(ctx, caption.week, band.x + PAD / 2, y + 12, p)
-  if (caption.slot) {
-    ctx.font = font(type.slot)
-    ctx.fillStyle = p.ink2
-    const lines = wrapLines(ctx, caption.slot, band.w - PAD, 3)
-    let sy = layout.card.h - 60 - lines.length * 36
-    for (const line of lines) {
-      ctx.fillText(line, band.x + PAD / 2, sy)
-      sy += 36
-    }
-  }
+
   if (caption.brand) {
-    ctx.font = font(type.brand)
-    ctx.fillStyle = p.ink2
-    ctx.fillText(caption.brand, band.x + PAD / 2, layout.card.h - 40)
+    ctx.font = font(TYPE.brand)
+    ctx.fillStyle = ON_PHOTO.ink2
+    ctx.fillText(caption.brand, PAD, y)
   }
+
+  ctx.shadowBlur = 0
+  if (caption.week) drawWeekBox(ctx, caption.week, layout.card.w - PAD, headlineTop, p)
 }
 
-function drawWeekBox(ctx: Ctx, text: string, x: number, y: number, p: Palette) {
+/** Kotak minggu diratakan ke tepi kanan dari lebar teksnya sendiri, jadi angka lebar apa pun tetap
+ * di dalam kartu. */
+function drawWeekBox(ctx: Ctx, text: string, right: number, y: number, p: Palette) {
   ctx.font = font('600 44px')
   const w = Math.max(120, ctx.measureText(text).width + 44)
+  const x = right - w
   ctx.fillStyle = p.accent
   ctx.fillRect(x, y, w, 64)
   ctx.fillStyle = p.accentInk

@@ -3,9 +3,10 @@
 Catat konsistensi terhadap rencana harianmu sendiri. Rencana ditulis tangan di tab **Plan**: satu
 nama, lalu hari-hari ia muncul (toggle tujuh hari), plus subplan yang boleh kamu isi per sesi. Tidak
 ada parser pola, tidak ada yang auto-generate. Ketuk satu plan di **Hari ini**, kamera terbuka, satu
-foto menutup plan itu; kartunya (1080x1350 atau 1350x1080, tanggal tercetak di bawah) yang disimpan,
-bukan foto mentah. Plan yang dicentang tanpa foto tercatat sebagai setengah selesai dan tidak
-menghidupkan streak. Hari yang tidak punya plan memang kosong — kamera tidak menawarkan diri.
+foto menutup plan itu; kartunya (1080x1080, foto penuh satu bingkai dengan tanggal tercetak di atas
+graysien gelap) yang disimpan, bukan foto mentah. Plan yang dicentang tanpa foto tercatat sebagai
+setengah selesai dan tidak menghidupkan streak. Hari yang tidak punya plan memang kosong — kamera
+tidak menawarkan diri.
 
 Semua data hidup di perangkat: Dexie (IndexedDB) untuk baris, OPFS untuk file gambar. Tidak ada
 server, tidak ada akun, tidak ada sinkronisasi. Salinanmu hanya file `.cmx.zip` yang kamu ekspor
@@ -92,7 +93,8 @@ localhost), lalu:
    mau menyala sama sekali, ada tombol "Coba lagi"; kamera dan OPFS dua-duanya butuh HTTPS.
 4. Foto satu: cek kartu yang muncul identik dengan jendela bidik, tanggal benar, tidak mirror.
    Row plan-nya berubah jadi "tercatat" dan jumlah fotonya ikut naik.
-5. Putar HP jadi landscape, foto lagi: jendela crop tidak boleh bergeser, kartu jadi 1350x1080.
+5. Putar HP jadi landscape, lalu foto lagi: kartunya tetap 1080x1080 dan crop tidak boleh berpindah —
+   orientasi tidak lagi memilih mode.
 6. Ketuk plan lain, pilih "Catat tanpa foto": tandanya jadi oranye "tanpa foto" dan streak tidak
    bertambah. Tutup tab, buka lagi: status masih sama.
 7. Tekan "lewati" di baris yang sama: plan jadi "dilewati"; tekan lagi untuk membatalkan.

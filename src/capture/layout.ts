@@ -1,4 +1,4 @@
-import { CARD, cardSize, type CardMode } from '../config'
+import { CARD } from '../config'
 
 export interface Rect {
   x: number
@@ -8,31 +8,20 @@ export interface Rect {
 }
 
 export interface CardLayout {
-  mode: CardMode
   card: { w: number; h: number }
-  /** jendela foto selalu 1:1 dan identik di kedua mode, jadi crop tidak berubah saat HP diputar */
+  /** Foto mengisi kartu sepenuhnya; tidak ada area kanvas yang tersisa untuk pita. */
   photo: Rect
-  band: Rect
+  /** Daerah gelap yang menimpa tepi bawah foto tempat caption duduk. */
+  scrim: Rect
   thumbEdge: number
 }
 
-export function computeLayout(mode: CardMode): CardLayout {
-  const card = cardSize(mode)
-  const edge = CARD.photoWindow
-  if (mode === 'portrait') {
-    return {
-      mode,
-      card,
-      photo: { x: 0, y: 0, w: edge, h: edge },
-      band: { x: 0, y: edge, w: edge, h: card.h - edge },
-      thumbEdge: CARD.thumbEdge,
-    }
-  }
+export function computeLayout(): CardLayout {
+  const edge = CARD.edge
   return {
-    mode,
-    card,
-    photo: { x: card.w - edge, y: 0, w: edge, h: edge },
-    band: { x: 0, y: 0, w: card.w - edge, h: edge },
+    card: { w: edge, h: edge },
+    photo: { x: 0, y: 0, w: edge, h: edge },
+    scrim: { x: 0, y: edge - CARD.scrimHeight, w: edge, h: CARD.scrimHeight },
     thumbEdge: CARD.thumbEdge,
   }
 }

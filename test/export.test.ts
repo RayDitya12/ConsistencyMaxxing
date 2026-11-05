@@ -20,9 +20,8 @@ async function seedPhoto(date: string, planLabel: string | null, planId: string 
     thumb: fakeCard(),
     encodeMime: 'image/webp',
     source: 'viewfinder',
-    mode: 'portrait',
     width: 1080,
-    height: 1350,
+    height: 1080,
     caption: `Kam ${date.slice(8)}`,
   })
 }

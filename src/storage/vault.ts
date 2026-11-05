@@ -13,7 +13,6 @@ export interface MediaInput {
   thumb: Blob
   encodeMime: 'image/webp' | 'image/jpeg'
   source: 'viewfinder' | 'fallback'
-  mode: 'portrait' | 'landscape'
   width: number
   height: number
   caption: string
@@ -35,7 +34,6 @@ export async function storeMedia(input: MediaInput): Promise<MediaRecord> {
     thumbBytes: input.thumb.size,
     w: input.width,
     h: input.height,
-    mode: input.mode,
     caption: input.caption,
     createdAt: Date.now(),
   }

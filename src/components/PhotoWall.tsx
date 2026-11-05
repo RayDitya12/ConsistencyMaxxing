@@ -26,7 +26,7 @@ export function PhotoWall({ records, emptyText = 'Belum ada foto.' }: { records:
 function PhotoThumb({ record, onOpen }: { record: MediaRecord; onOpen: () => void }) {
   const url = useBlobUrl(record.thumb)
   return (
-    <button type="button" onClick={onOpen} className="aspect-[4/5] w-full overflow-hidden border" style={{ borderColor: 'var(--line)' }}>
+    <button type="button" onClick={onOpen} className="aspect-square w-full overflow-hidden border" style={{ borderColor: 'var(--line)' }}>
       {url ? (
         <img src={url} alt={record.caption} className="h-full w-full object-cover" />
       ) : (
@@ -64,8 +64,8 @@ function PhotoViewer({ record, onClose }: { record: MediaRecord; onClose: () => 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
           <Line label="nama file" value={record.file.replace(/^media\//, '')} />
           <Line label="ukuran" value={formatBytes(record.bytes)} />
-          <Line label="mode" value={record.mode === 'portrait' ? 'tegak' : 'tidur'} />
           <Line label="sumber" value={record.source === 'viewfinder' ? 'kamera' : 'berkas'} />
+          <Line label="resolusi" value={`${record.w}×${record.h}`} />
         </dl>
         <div>
           <Button onClick={destroy} disabled={removing}>
