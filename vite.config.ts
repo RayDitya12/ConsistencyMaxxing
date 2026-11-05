@@ -1,12 +1,18 @@
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
+
+// HTTPS=1 npm run preview -- --host  ->  kamera + OPFS bisa diuji dari HP, karena
+// http://<ip-laptop> bukan secure context dan kedua API itu diblokir di sana.
+const https = process.env.HTTPS === '1'
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    ...(https ? [basicSsl()] : []),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/app-icon.svg'],

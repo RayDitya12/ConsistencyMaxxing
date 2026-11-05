@@ -29,7 +29,7 @@ async function seedPhoto(date: string, slotLabel: string | null, slotId: string 
 
 async function reset() {
   installBackend(new MemoryBackend())
-  await Promise.all([db.templates, db.slots, db.items, db.entries, db.checks, db.media, db.meta].map((t) => t.clear()))
+  await Promise.all([db.templates, db.slots, db.items, db.entries, db.checks, db.media].map((t) => t.clear()))
 }
 
 describe('arsip zip per tahun', () => {

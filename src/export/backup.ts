@@ -189,6 +189,6 @@ export async function applyArchive(parsed: ParsedArchive, mode: 'merge' | 'repla
 }
 
 export async function eraseEverything() {
-  await Promise.all([db.media.clear(), db.checks.clear(), db.entries.clear(), db.items.clear(), db.slots.clear(), db.templates.clear(), db.meta.clear()])
+  await Promise.all([db.media.clear(), db.checks.clear(), db.entries.clear(), db.items.clear(), db.slots.clear(), db.templates.clear()])
   await getBackend().clear()
 }

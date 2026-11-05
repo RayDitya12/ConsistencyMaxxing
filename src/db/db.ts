@@ -1,11 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import type { Check, Entry, Item, MediaRecord, Slot, Template } from './types'
 
-export interface MetaRow {
-  key: string
-  value: unknown
-}
-
 class ConsistencyDb extends Dexie {
   templates!: Table<Template, string>
   slots!: Table<Slot, string>
@@ -13,7 +8,6 @@ class ConsistencyDb extends Dexie {
   entries!: Table<Entry, string>
   checks!: Table<Check, string>
   media!: Table<MediaRecord, string>
-  meta!: Table<MetaRow, string>
 
   constructor() {
     super('consistencymaxxing')
@@ -26,16 +20,10 @@ class ConsistencyDb extends Dexie {
       media: 'id, date, entryId, [date+entryId]',
       meta: 'key',
     })
+    // meta pernah dipakai untuk status boot; barisnya membuat 'Terpakai' tumbuh tiap diperiksa
+    // ulang padahal tidak pernah dibaca. Versi 2 menghapus tabelnya dari install lama.
+    this.version(2).stores({ meta: null })
   }
 }
 
 export const db = new ConsistencyDb()
-
-export async function putMeta(key: string, value: unknown) {
-  await db.meta.put({ key, value })
-}
-
-export async function getMeta<T>(key: string): Promise<T | undefined> {
-  const row = await db.meta.get(key)
-  return row?.value as T | undefined
-}

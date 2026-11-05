@@ -1,5 +1,4 @@
 import { ensureCaptionFonts } from '../capture/fonts'
-import { putMeta } from '../db/db'
 import { readStorageState, requestPersistence, type StorageState } from './capability'
 import { sweepOrphans } from './sweep'
 
@@ -22,9 +21,8 @@ export function onBoot(fn: (s: BootState) => void): () => void {
   return () => listeners.delete(fn)
 }
 
-async function publish(next: BootState) {
+function publish(next: BootState) {
   state = next
-  await putMeta('boot', next)
   listeners.forEach((fn) => fn(next))
 }
 
@@ -37,14 +35,24 @@ export async function bootstrap(): Promise<BootState> {
     orphansRemoved,
     storageBlocked: !base.opfs,
   }
-  await publish(partial)
+  publish(partial)
 
   const fontsReady = await ensureCaptionFonts()
-  const persisted = partial.opfs ? await requestPersistence() : partial.persisted
+  // sengaja tidak memanggil persist() di sini: Chrome menjadwalkan masa tunggu setelah satu
+  // penolakan, jadi permintaan otomatis saat boot bisa membuat tombol 'Minta izin' mati selama
+  // beberapa hari. Izin hanya diminta lewat tombol.
+  const persisted = partial.persisted
   const storage = partial.opfs ? await readStorageState() : partial
   const final: BootState = { ...storage, persisted, fontsReady, orphansRemoved, storageBlocked: !partial.opfs }
-  await publish(final)
+  publish(final)
   return final
+}
+
+/** Minta izin simpan ke Chrome atas tombol, bukan diam-diam saat boot. */
+export async function persistNow(): Promise<boolean> {
+  const granted = await requestPersistence()
+  if (state) publish({ ...state, persisted: granted })
+  return granted
 }
 
 export function shutterReady(s: BootState | null): boolean {
