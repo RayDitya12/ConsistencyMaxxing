@@ -1,14 +1,14 @@
 import { APP_NAME } from '../config'
 import { formatShort, weekdayLabel } from '../lib/dates'
 
-/** Fase sekarang hanya tanggal yang dicetak. Satu baris ke false = field muncul di kartu berikutnya
- * tanpa menyentuh renderer. */
+/** Tanggal, nama plan, dan merek dicetak; angka streak sengaja tidak, karena ia dihitung ulang dari
+ * basis data dan angka di kartu akan langsung jadi sejarah yang bisa salah. */
 export const CAPTION_FIELDS = {
   date: true,
   weekday: true,
-  slot: false,
+  slot: true,
   weekStreak: false,
-  brand: false,
+  brand: true,
 } as const
 
 export interface CaptionInput {

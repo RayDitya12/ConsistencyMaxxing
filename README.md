@@ -23,6 +23,10 @@ npm run build         # dist/ + service worker
 npm run preview       # sajikan hasil build, cek mode offline di sini
 ```
 
+Font subset sudah ikut repo (`public/fonts/`). `npm run fonts` hanya perlu dijalankan kalau subsetnya
+mau diganti atau file-nya hilang — script itu men-download 400 dan 600 sebagai dua permintaan
+terpisah dan menolak kalau kedua weight ternyata mengembalikan berkas yang sama.
+
 Untuk menguji kamera dari HP, hasil build harus disajikan lewat HTTPS: `getUserMedia` dan OPFS
 dua-duanya diblokir di `http://<ip-laptop>`, jadi di sana shutter dan file picker hilang tanpa
 pesan yang jelas.
@@ -49,8 +53,15 @@ Dua woff2 di `public/fonts/` adalah subset latin yang di-self-host; kalau hilang
 
 ## Kenapa beberapa keputusan diambil
 
-- **Kartu dibekukan saat memotret.** Warna kartu dibaca dari CSS saat itu; kalau HP sedang mode
-  gelap, kartunya gelap selamanya. Sengaja: hasil harus sama dengan yang dilihat saat memotret.
+- **Kartu dibekukan saat memotret.** Yang ikut tema hanya warna merek (aturan dan kotak minggu);
+  teks di atas foto selalu putih di atas graysien gelap, karena kartunya dibaca orang lain, bukan
+  hanya oleh HP yang memotret.
+- **Arah visual: "Cetak Swiss".** Radius nol, aturan 2px, label uppercase ber-tracking, oranye
+  `#E8540C` hanya untuk aturan/blok/angka besar — tidak pernah untuk teks kecil. Identitas hidup di
+  kartu foto, chrome-nya tetap netral.
+- **Font diambil dengan script, bukan unduh manual.** `npm run fonts` mengambil Public Sans 400 dan
+  600 sebagai dua permintaan terpisah; satu permintaan untuk dua weight membuat Google Fonts
+  mengembalikan file yang sama, dan seluruh teks semi-bold diam-diam jadi regular.
 - **Foto mentah dibuang.** Yang disimpan hanya kartu + thumbnail. Konsekuensinya crop tidak bisa
   diubah lagi, jadi jendela bidik menunjukkan persis 1:1 yang akan masuk.
 - **Streak mingguan pakai ambang 1 hari dari 7.** Angka itu di `src/config.ts` (`WEEK_THRESHOLD`),
@@ -126,5 +137,6 @@ src/export/     arsip .cmx.zip: bangun, baca, gabungkan, ganti
 src/plan/       aksi plan/subplan (toggle hari, contoh Workout)
 src/screens/    Hari ini, Kalender, Plan, Profil (di dalamnya ada Pengaturan)
 src/storage/    OPFS, kapasitas, bootstrap, sapu file yatim
+scripts/        ambil subset font, bikin ikon PNG, sertifikat uji di HP
 test/           vitest + fake-indexeddb (pipeline gambar diuji tanpa kamera)
 ```

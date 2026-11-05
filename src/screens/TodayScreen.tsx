@@ -108,7 +108,7 @@ export function TodayScreen() {
               const entry = await ensureEntry(target, null)
               await setNote(entry.id, e.target.value)
             }}
-            className="w-full resize-y border bg-transparent p-3 text-[16px] leading-relaxed outline-none"
+            className="w-full resize-y border-2 bg-transparent p-3 text-[16px] leading-relaxed outline-none"
             style={{ borderColor: 'var(--line)' }}
           />
         </Section>
@@ -169,7 +169,7 @@ function PlanRow({
           style={
             skipped
               ? { background: 'var(--ink)', color: 'var(--surface)' }
-              : { border: '1px solid var(--hairline)', color: 'var(--ink-2)' }
+              : { border: '2px solid var(--hairline)', color: 'var(--ink-2)' }
           }
         >
           lewati

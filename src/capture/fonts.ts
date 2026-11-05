@@ -1,6 +1,6 @@
 export const FONT_FAMILY = 'Public Sans'
 
-const SIZES = ['400 96px', '400 44px', '400 32px', '600 96px', '600 44px', '600 32px']
+const SIZES = ['400 78px', '400 30px', '400 46px', '600 78px', '600 30px', '600 46px']
 
 export function font(spec: string): string {
   return `${spec} "${FONT_FAMILY}", system-ui, sans-serif`

@@ -57,7 +57,7 @@ export function Mark({ status }: { status: string }) {
     return (
       <span
         className="flex h-[18px] w-[18px] shrink-0 items-center justify-center"
-        style={{ border: '1px solid var(--line)', background: 'var(--surface)' }}
+        style={{ border: '2px solid var(--line)', background: 'var(--surface)' }}
       >
         <Tick color="var(--accent)" />
       </span>
@@ -66,12 +66,12 @@ export function Mark({ status }: { status: string }) {
     return (
       <span
         className="flex h-[18px] w-[18px] shrink-0 items-center justify-center text-[13px] leading-none"
-        style={{ border: '1px solid var(--hairline)', color: 'var(--ink-2)' }}
+        style={{ border: '2px solid var(--hairline)', color: 'var(--ink-2)' }}
       >
         &ndash;
       </span>
     )
-  return <span className="block h-[18px] w-[18px] shrink-0" style={{ border: '1px solid var(--hairline)' }} />
+  return <span className="block h-[18px] w-[18px] shrink-0" style={{ border: '2px solid var(--hairline)' }} />
 }
 
 function Tick({ color }: { color: string }) {

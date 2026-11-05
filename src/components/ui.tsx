@@ -10,7 +10,7 @@ export function TopBar({ title, right }: { title: string; right?: ReactNode }) {
       className="flex items-center justify-between border-b-2 px-4 py-3"
       style={{ borderColor: 'var(--line)' }}
     >
-      <h1 className="text-[15px] font-semibold tracking-tight">{title}</h1>
+      <h1 className="text-[13px] font-semibold uppercase tracking-[0.12em]">{title}</h1>
       {right}
     </header>
   )
@@ -19,7 +19,10 @@ export function TopBar({ title, right }: { title: string; right?: ReactNode }) {
 export function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section className="border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-2">{label}</h2>
+      <h2 className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-2">
+        <span className="block h-[10px] w-[3px]" style={{ background: 'var(--accent)' }} />
+        {label}
+      </h2>
       {children}
     </section>
   )
@@ -33,11 +36,11 @@ export function Button({ variant = 'ghost', className = '', style, ...rest }: Bu
       ? { background: 'var(--ink)', color: 'var(--surface)' }
       : variant === 'accent'
         ? { background: 'var(--accent)', color: 'var(--accent-ink)' }
-        : { background: 'transparent', color: 'var(--ink)', border: '1px solid var(--line)' }
+        : { background: 'transparent', color: 'var(--ink)', border: '2px solid var(--line)' }
   return (
     <button
       {...rest}
-      className={`touch-target px-4 text-[14px] font-semibold active:opacity-70 disabled:opacity-40 ${className}`}
+      className={`touch-target px-4 text-[13px] font-semibold uppercase tracking-[0.08em] active:opacity-70 disabled:opacity-40 ${className}`}
       style={{ ...look, ...style }}
     />
   )
@@ -49,7 +52,7 @@ export function Field({ label, ...rest }: InputHTMLAttributes<HTMLInputElement> 
       <span className="mb-1 block text-[11px] uppercase tracking-[0.14em] text-ink-2">{label}</span>
       <input
         {...rest}
-        className="touch-target w-full border-b bg-transparent px-0 py-2 text-[16px] outline-none"
+        className="touch-target w-full border-b-2 bg-transparent px-0 py-2 text-[16px] outline-none"
         style={{ borderColor: 'var(--line)' }}
       />
     </label>
@@ -59,7 +62,10 @@ export function Field({ label, ...rest }: InputHTMLAttributes<HTMLInputElement> 
 export function Streak({ value, unit, big = false }: { value: number; unit: string; big?: boolean }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className={`num font-semibold ${big ? 'text-[44px] leading-none' : 'text-[22px] leading-none'}`}>
+      <span
+        className={`num font-semibold ${big ? 'text-[44px] leading-[1.05]' : 'text-[22px] leading-none'}`}
+        style={big ? { borderBottom: '4px solid var(--accent)', paddingBottom: 2 } : undefined}
+      >
         {value}
       </span>
       <span className="text-[11px] uppercase tracking-[0.14em] text-ink-2">{unit}</span>

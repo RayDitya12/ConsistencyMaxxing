@@ -112,7 +112,7 @@ function DayPicker({ days, onToggle }: { days: number[]; onToggle: (index: numbe
           aria-pressed={days.includes(i)}
           aria-label={`${label}: ${days.includes(i) ? 'sudah dipilih' : 'belum dipilih'}`}
           onClick={() => onToggle(i)}
-          className="touch-target min-w-[44px] flex-1 border text-[12px] font-semibold uppercase tracking-[0.08em]"
+          className="touch-target min-w-[44px] flex-1 border-2 text-[12px] font-semibold uppercase tracking-[0.08em]"
           style={
             days.includes(i)
               ? { background: 'var(--ink)', color: 'var(--surface)', borderColor: 'var(--ink)' }
@@ -144,7 +144,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         value={plan.name}
         aria-label="nama rencana"
         onChange={(e) => void renamePlan(plan.id, e.target.value)}
-        className="touch-target mb-3 w-full border-b bg-transparent py-1 text-[16px] font-semibold outline-none"
+        className="touch-target mb-3 w-full border-b-2 bg-transparent py-1 text-[16px] font-semibold outline-none"
         style={{ borderColor: 'var(--line)' }}
       />
       <DayPicker days={plan.days} onToggle={(i) => void setPlanDays(plan.id, toggleDay(plan.days, i))} />
@@ -200,7 +200,7 @@ function SubplanList({ planId }: { planId: string }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="tambah subplan, mis. Bab 3 selesai"
-          className="touch-target min-w-0 flex-1 border-b bg-transparent py-1 text-[16px] outline-none"
+          className="touch-target min-w-0 flex-1 border-b-2 bg-transparent py-1 text-[16px] outline-none"
           style={{ borderColor: 'var(--hairline)' }}
         />
         <Button

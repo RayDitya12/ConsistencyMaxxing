@@ -44,10 +44,9 @@ describe('geometri kartu', () => {
   })
 
   it('tumpukan caption maksimum tetap muat di dalam graysien', () => {
-    const full: Caption = { headline: 'Kam 05.11.26', slot: 'Belajar Algoritma', week: 'W14', brand: APP_NAME }
-    // dua baris nama plan adalah kasus terburuk yang renderer boleh hasilkan
-    expect(captionStack(full, 2)).toBeLessThanOrEqual(computeLayout().scrim.h)
-    expect(captionStack({ headline: '', slot: null, week: null, brand: null }, 0)).toBe(48)
+    const full: Caption = { headline: 'Kam 05.11.26', slot: 'Workout · Upper', week: 'W14', brand: APP_NAME }
+    expect(captionStack(full, true)).toBeLessThanOrEqual(computeLayout().scrim.h)
+    expect(captionStack({ headline: '', slot: null, week: null, brand: null }, false)).toBe(0)
   })
 
   it('cover crop selalu menutupi kartu, termasuk untuk sumber sangat lebar', () => {
@@ -79,13 +78,18 @@ describe('geometri kartu', () => {
 })
 
 describe('caption kartu', () => {
-  it('fase ini hanya tanggal yang dicetak', () => {
+  it('tanggal, nama plan, dan merek dicetak; angka streak tidak pernah', () => {
     const c = buildCaption({ dateKey: '2026-11-05', planLabel: 'Workout · Upper', weekStreak: 14, dailyStreak: 3 })
     expect(c.headline).toBe('Kam 05.11.26')
-    expect(c.slot).toBeNull()
+    expect(c.slot).toBe('Workout · Upper')
+    expect(c.brand).toBe(APP_NAME)
     expect(c.week).toBeNull()
-    expect(c.brand).toBeNull()
-    expect(CAPTION_FIELDS.date).toBe(true)
+    expect(CAPTION_FIELDS.weekStreak).toBe(false)
+  })
+
+  it('foto tanpa plan hanya mencetak tanggal', () => {
+    const c = buildCaption({ dateKey: '2026-11-05', planLabel: null, weekStreak: 0, dailyStreak: 0 })
+    expect(c.slot).toBeNull()
   })
 
   it('memotong label panjang sebelum masuk gambar', () => {

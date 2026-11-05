@@ -155,12 +155,8 @@ function DayCell({
       }}
     >
       <span className="flex items-baseline justify-between">
-        <span className="num text-[10px] font-semibold" style={{ color: 'var(--ink-2)' }}>
-          {Number(date.slice(8))}
-        </span>
-        {info && info.photos > 0 && (
-          <span className="num text-[9px] leading-none text-ink-2">{info.photos}</span>
-        )}
+        <span className="num text-[12px] font-semibold">{Number(date.slice(8))}</span>
+        {info && info.photos > 0 && <span className="num text-[10px] leading-none text-ink-2">{info.photos}</span>}
       </span>
       <Mark status={status} />
     </button>

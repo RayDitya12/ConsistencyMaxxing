@@ -10,7 +10,8 @@
     "icons": "node scripts/make-icons.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "fonts": "node scripts/fetch-fonts.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.4",

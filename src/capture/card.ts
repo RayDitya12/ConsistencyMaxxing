@@ -1,27 +1,26 @@
 import { coverRect, type CardLayout } from './layout'
 import type { Caption } from './caption'
-import { wrapLines } from './caption'
 import { font } from './fonts'
 import { makeCanvas, encodeCanvas, type CanvasFactory } from './canvas'
 import type { Palette } from '../theme/palette'
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
 
-const PAD = 48
-const GAP = 14
+/** Grid cetak: satu margin, satu aturan, satu baseline. Semua angka diukur dari tepi kartu, jadi
+ * mengubah tampilan kartu tidak pernah menyentuh kode capture. */
+const MARGIN = 72
+const RULE_H = 10
+const GAP_RULE = 26
+const GAP_META = 14
+const H = { date: 92, meta: 40 }
 
-interface TypeSpec {
-  headline: string
-  slot: string
-  brand: string
-}
+const TYPE = { date: '600 78px', meta: '400 30px', week: '600 46px' }
+const TRACK_META = '0.14em'
 
-const TYPE: TypeSpec = { headline: '600 84px', slot: '400 36px', brand: '400 26px' }
-const LINE_H = { headline: 96, slot: 48, brand: 34 }
-
-/** Caption dicetak di atas foto, jadi warnanya tidak ikut tema: graysien selalu gelap dan teks
- * selalu terang, di terang maupun gelap. Hanya aksen kotak minggu yang mengambil warna tema. */
-const ON_PHOTO = { ink: '#ffffff', ink2: 'rgba(255,255,255,0.8)' }
+/** Kartu adalah artefak yang dibakar permanen: teks di atas foto selalu terang di atas graysien
+ * gelap, apa pun tema viewer. Hanya warna merek yang ikut palet. */
+const ON_PHOTO = { ink: '#ffffff', ink2: 'rgba(255,255,255,0.82)' }
+const CHIP_INK = '#111111'
 
 export interface DrawOptions {
   pan?: { x: number; y: number }
@@ -36,14 +35,14 @@ export interface RenderedCard {
   height: number
 }
 
-/** Teks caption harus habis di dalam graysien. Field baru dinyalakan lewat caption.ts dan test
- * geometri menahan tumpukan maksimum, jadi yang gagal adalah build, bukan kartu user. */
-export function captionStack(caption: Caption, slotLines: number): number {
-  const heights: number[] = []
-  if (slotLines) heights.push(slotLines * LINE_H.slot)
-  if (caption.headline) heights.push(LINE_H.headline)
-  if (caption.brand) heights.push(LINE_H.brand)
-  return PAD + heights.reduce((sum, h) => sum + h, 0) + Math.max(0, heights.length - 1) * GAP
+/** Tinggi blok caption termasuk margin bawah. Test geometri menahan nilai maksimum terhadap tinggi
+ * graysien, jadi kalau field caption baru dinyalakan yang gagal adalah build, bukan kartu user. */
+export function captionStack(caption: Caption, hasMeta: boolean): number {
+  if (!caption.headline && !hasMeta) return 0
+  let h = MARGIN
+  if (caption.headline) h += RULE_H + GAP_RULE + H.date
+  if (hasMeta) h += (caption.headline ? GAP_META : 0) + H.meta
+  return h
 }
 
 export function drawCard(
@@ -66,68 +65,62 @@ export function drawCard(
   ctx.fillStyle = scrim
   ctx.fillRect(0, layout.scrim.y, layout.card.w, layout.scrim.h)
 
-  ctx.font = font(TYPE.slot)
-  const slotLines = caption.slot ? wrapLines(ctx, caption.slot, layout.card.w - PAD * 2, 2) : []
-  const stack = captionStack(caption, slotLines.length)
+  const stack = captionStack(caption, Boolean(caption.slot || caption.brand))
   if (stack > layout.scrim.h) throw new Error(`Caption ${stack}px tidak muat di graysien ${layout.scrim.h}px.`)
-  drawCaption(ctx, caption, layout, options.palette, slotLines)
+  drawCaption(ctx, caption, layout, options.palette)
   return { canvas, ctx, width: layout.card.w, height: layout.card.h }
 }
 
-/** Semua baris teks ditumpuk dari dasar graysien ke atas: nama plan kecil, tanggal besar, merek
- * paling bawah. `wrapLines` dievaluate di luar supaya tingginya bisa diperiksa lebih dulu. */
-function drawCaption(
-  ctx: Ctx,
-  caption: Caption,
-  layout: CardLayout,
-  p: Palette,
-  slotLines: string[],
-): void {
+function drawCaption(ctx: Ctx, caption: Caption, layout: CardLayout, p: Palette): void {
+  const right = layout.card.w - MARGIN
+  const width = layout.card.w - MARGIN * 2
+  const hasMeta = Boolean(caption.slot || caption.brand)
+  let y = layout.card.h - captionStack(caption, hasMeta)
   ctx.textBaseline = 'top'
-  ctx.shadowColor = 'rgba(0,0,0,0.5)'
-  ctx.shadowBlur = 16
-
-  let y = layout.card.h - captionStack(caption, slotLines.length)
-  const headlineTop = y + (slotLines.length ? slotLines.length * LINE_H.slot + GAP : 0)
-
-  if (slotLines.length) {
-    ctx.font = font(TYPE.slot)
-    ctx.fillStyle = ON_PHOTO.ink2
-    for (const line of slotLines) {
-      ctx.fillText(line, PAD, y)
-      y += LINE_H.slot
-    }
-    y += GAP
-  }
 
   if (caption.headline) {
-    ctx.font = font(TYPE.headline)
+    ctx.fillStyle = p.accent
+    ctx.fillRect(MARGIN, y, width, RULE_H)
+    y += RULE_H + GAP_RULE
+    ctx.font = font(TYPE.date)
     ctx.fillStyle = ON_PHOTO.ink
-    ctx.fillText(caption.headline, PAD, y)
-    y += LINE_H.headline + GAP
+    ctx.fillText(caption.headline.toUpperCase(), MARGIN, y)
+    if (caption.week) drawWeekBox(ctx, caption.week, right, y, p)
+    y += H.date
   }
 
+  if (!hasMeta) return
+  y += GAP_META
+  ctx.font = font(TYPE.meta)
+  ctx.fillStyle = ON_PHOTO.ink2
+  setTracking(ctx, TRACK_META)
+  const left = caption.slot ? caption.slot.toUpperCase() : ''
+  if (left) ctx.fillText(left, MARGIN, y)
+  // Merek hanya muncul bila muat; nama plan tulisan user tidak pernah dipotong untuknya.
   if (caption.brand) {
-    ctx.font = font(TYPE.brand)
-    ctx.fillStyle = ON_PHOTO.ink2
-    ctx.fillText(caption.brand, PAD, y)
+    const brand = caption.brand.toUpperCase()
+    const fits = !left || ctx.measureText(left).width + ctx.measureText(brand).width + 48 <= width
+    if (fits) ctx.fillText(brand, right - ctx.measureText(brand).width, y)
   }
-
-  ctx.shadowBlur = 0
-  if (caption.week) drawWeekBox(ctx, caption.week, layout.card.w - PAD, headlineTop, p)
+  setTracking(ctx, '0em')
 }
 
-/** Kotak minggu diratakan ke tepi kanan dari lebar teksnya sendiri, jadi angka lebar apa pun tetap
- * di dalam kartu. */
+/** letterSpacing hanya ada di browser baru; kartu tanpa tracking tetap terbaca, jadi tidak perlu
+ * jalur cadangan yang berbeda. */
+function setTracking(ctx: Ctx, value: string) {
+  const withTracking = ctx as { letterSpacing?: string }
+  if ('letterSpacing' in withTracking) withTracking.letterSpacing = value
+}
+
+/** Kotak minggu: blok aksen solid seukuran baris tanggal, rata kanan dari lebar angkanya sendiri. */
 function drawWeekBox(ctx: Ctx, text: string, right: number, y: number, p: Palette) {
-  ctx.font = font('600 44px')
-  const w = Math.max(120, ctx.measureText(text).width + 44)
+  ctx.font = font(TYPE.week)
+  const w = Math.max(132, ctx.measureText(text).width + 48)
   const x = right - w
   ctx.fillStyle = p.accent
-  ctx.fillRect(x, y, w, 64)
-  ctx.fillStyle = p.accentInk
-  ctx.textBaseline = 'top'
-  ctx.fillText(text, x + 22, y + 10)
+  ctx.fillRect(x, y, w, H.date)
+  ctx.fillStyle = CHIP_INK
+  ctx.fillText(text, x + 24, y + 22)
 }
 
 /** Sisi terpanjang yang dipertahankan; tinggi mengikuti rasio kartu supaya thumbnail tidak gepeng. */

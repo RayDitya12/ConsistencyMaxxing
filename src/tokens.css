@@ -9,8 +9,6 @@
   --accent: #e8540c;
   --accent-ink: #ffffff;
   --danger: #a41f1f;
-  --band: #f2f2f0;
-  --photo-empty: #e4e4e1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,7 +23,5 @@
     --accent: #ff6a1f;
     --accent-ink: #0e0e0e;
     --danger: #ff6b5e;
-    --band: #0e0e0e;
-    --photo-empty: #1a1a1a;
   }
 }

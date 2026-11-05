@@ -315,7 +315,7 @@ function SettingsView({ onBack }: { onBack: () => void }) {
                 <input
                   value={word}
                   onChange={(e) => setWord(e.target.value)}
-                  className="touch-target w-full border-b bg-transparent px-0 py-2 text-[16px] outline-none"
+                  className="touch-target w-full border-b-2 bg-transparent px-0 py-2 text-[16px] outline-none"
                   style={{ borderColor: 'var(--line)' }}
                 />
               </label>
@@ -338,7 +338,7 @@ function SettingsView({ onBack }: { onBack: () => void }) {
             <input
               value={wipeWord}
               onChange={(e) => setWipeWord(e.target.value)}
-              className="touch-target w-full border-b bg-transparent px-0 py-2 text-[16px] outline-none"
+              className="touch-target w-full border-b-2 bg-transparent px-0 py-2 text-[16px] outline-none"
               style={{ borderColor: 'var(--line)' }}
             />
           </label>
