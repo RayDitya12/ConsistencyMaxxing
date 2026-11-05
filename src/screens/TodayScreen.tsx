@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { X } from 'lucide-react'
+import { Pencil, X } from 'lucide-react'
 import {
   checksForDate,
   ensureEntry,
@@ -61,15 +61,7 @@ export function TodayScreen() {
 
   return (
     <Screen>
-      <TopBar
-        eyebrow="Hari ini"
-        title={formatLong(target)}
-        right={
-          <span className="num rounded-card border px-2 py-1 text-[11px] text-ink-2" style={{ borderColor: 'var(--hairline)' }}>
-            {media.length} foto
-          </span>
-        }
-      />
+      <TopBar eyebrow="Hari ini" title={formatLong(target)} />
       <div className="flex items-end gap-6 border-b px-4 py-4" style={{ borderColor: 'var(--hairline)' }}>
         <Streak value={logged ? weeklyStreak(logged, day.today, WEEK_THRESHOLD) : 0} unit={`minggu (${WEEK_THRESHOLD}/7)`} big />
         <Streak value={logged ? dailyStreak(logged, day.today) : 0} unit="hari berfoto" />
@@ -105,21 +97,7 @@ export function TodayScreen() {
             <PhotoWall records={media} />
           </Section>
         )}
-        <Section label="Catatan hari ini">
-          <textarea
-            key={`${target}`}
-            defaultValue={dayEntry?.note ?? ''}
-            rows={4}
-            placeholder="Tulis apa saja tentang hari ini."
-            onBlur={async (e) => {
-              if (!dayEntry && e.target.value.trim() === '') return
-              const entry = await ensureEntry(target, null)
-              await setNote(entry.id, e.target.value)
-            }}
-            className="w-full resize-y rounded-card border bg-transparent p-3 text-[16px] leading-relaxed outline-none"
-            style={{ borderColor: 'var(--hairline)' }}
-          />
-        </Section>
+        <NoteSection target={target} dayEntry={dayEntry} />
       </div>
       {open && (
         <PlanSheet
@@ -133,6 +111,58 @@ export function TodayScreen() {
         />
       )}
     </Screen>
+  )
+}
+
+function NoteSection({ target, dayEntry }: { target: string; dayEntry: Entry | undefined }) {
+  const [editing, setEditing] = useState(false)
+  const note = dayEntry?.note ?? ''
+
+  // Catatan ditulis saat field kehilangan fokus, jadi ketuk Simpan lebih dulu masih
+  // menyimpan ketikan yang belum selesai sebelum kembali ke mode baca.
+  const save = () => {
+    const active = document.activeElement
+    if (active instanceof HTMLElement) active.blur()
+    announceSaved()
+    setEditing(false)
+  }
+
+  return (
+    <Section label="Catatan hari ini">
+      {editing ? (
+        <>
+          <textarea
+            key={target}
+            defaultValue={note}
+            rows={4}
+            autoFocus
+            placeholder="Tulis apa saja tentang hari ini."
+            onBlur={async (e) => {
+              if (!dayEntry && e.target.value.trim() === '') return
+              const entry = await ensureEntry(target, null)
+              await setNote(entry.id, e.target.value)
+            }}
+            className="w-full resize-y rounded-card border bg-transparent p-3 text-[16px] leading-relaxed outline-none"
+            style={{ borderColor: 'var(--accent)' }}
+          />
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className="text-[12px] leading-snug text-ink-2">Perubahan tersimpan sendiri.</p>
+            <Button variant="accent" onClick={save}>
+              Simpan
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-start gap-2">
+          <p className="min-w-0 flex-1 whitespace-pre-wrap text-[16px] leading-relaxed text-ink-2">
+            {note || 'Belum ada catatan untuk hari ini.'}
+          </p>
+          <IconButton label="Edit catatan" onClick={() => setEditing(true)}>
+            <Pencil size={17} strokeWidth={1.75} />
+          </IconButton>
+        </div>
+      )}
+    </Section>
   )
 }
 

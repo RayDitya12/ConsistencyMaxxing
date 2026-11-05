@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { X } from 'lucide-react'
 import { db } from '../db/db'
 import { bootstrap, currentBoot, persistNow } from '../storage/bootstrap'
 import { useBoot } from '../storage/useBoot'
@@ -16,7 +17,7 @@ import {
   yearsAvailable,
   type ParsedArchive,
 } from '../export/backup'
-import { Button, Screen, Section, Streak, TopBar } from '../components/ui'
+import { Button, IconButton, Screen, Section, Streak, TopBar } from '../components/ui'
 
 function Row({ label, value, warn = false }: { label: string; value: string; warn?: boolean }) {
   return (
@@ -77,7 +78,7 @@ function SummaryView({ onOpenSettings }: { onOpenSettings: () => void }) {
         title="Profil"
         right={
           <Button className="text-[12px]" onClick={onOpenSettings}>
-            Pengaturan
+            Data
           </Button>
         }
       />
@@ -97,7 +98,7 @@ function SummaryView({ onOpenSettings }: { onOpenSettings: () => void }) {
             Semua foto, catatan, dan plan hidup di perangkat ini saja. Tidak ada akun, tidak ada server. Yang bisa
             memindahkan datamu hanyalah arsip .cmx.zip yang kamu ekspor sendiri, jadi ekspor rutin itu bagian dari
             memakai aplikasi ini, bukan pekerjaan tambahan. Ruang terpakai, izin simpan permanen, ekspor, impor, dan
-            hapus semuanya ada di Pengaturan.
+            hapus semuanya ada di Data.
           </p>
         </Section>
       </div>
@@ -136,11 +137,11 @@ function SettingsView({ onBack }: { onBack: () => void }) {
       <Screen>
         <TopBar
           eyebrow="Profil"
-          title="Pengaturan"
+          title="Data"
           right={
-            <Button className="text-[12px]" onClick={onBack}>
-              Profil
-            </Button>
+            <IconButton label="Tutup Data" onClick={onBack}>
+              <X size={20} strokeWidth={1.75} />
+            </IconButton>
           }
         />
         <div className="p-4 text-[13px] text-ink-2">Memeriksa penyimpanan perangkat…</div>
@@ -225,15 +226,15 @@ function SettingsView({ onBack }: { onBack: () => void }) {
     <Screen>
       <TopBar
         eyebrow="Profil"
-        title="Pengaturan"
+        title="Data"
         right={
           <span className="flex items-center gap-2">
             <Button className="text-[12px]" onClick={() => void bootstrap()}>
               Periksa ulang
             </Button>
-            <Button className="text-[12px]" onClick={onBack}>
-              Profil
-            </Button>
+            <IconButton label="Tutup Data" onClick={onBack}>
+              <X size={20} strokeWidth={1.75} />
+            </IconButton>
           </span>
         }
       />
