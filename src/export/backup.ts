@@ -39,9 +39,16 @@ export interface ArchiveResult {
   missingFiles: number
 }
 
+/** Tahun yang benar-benar punya isi: foto, entri, atau checklist. */
 export async function yearsAvailable(): Promise<string[]> {
-  const rows = await db.media.toArray()
-  return [...new Set(rows.map((r) => r.date.slice(0, 4)))].sort()
+  const [media, entries, checks] = await Promise.all([
+    db.media.toArray(),
+    db.entries.toArray(),
+    db.checks.toArray(),
+  ])
+  const years = new Set<string>()
+  for (const row of [...media, ...entries, ...checks]) years.add(row.date.slice(0, 4))
+  return [...years].sort()
 }
 
 function toBytes(blob: Blob): Promise<Uint8Array> {

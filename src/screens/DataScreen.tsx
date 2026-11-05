@@ -5,7 +5,6 @@ import { bootstrap, currentBoot } from '../storage/bootstrap'
 import { useBoot } from '../storage/useBoot'
 import { formatBytes, monthsOfHeadroom } from '../storage/capability'
 import { loggedDates } from '../db/queries'
-import { todayKey } from '../lib/dates'
 import { applyArchive, buildYearArchive, eraseEverything, readArchive, yearsAvailable, type ParsedArchive } from '../export/backup'
 import { Button, Screen, Section, TopBar } from '../components/ui'
 
@@ -57,11 +56,7 @@ export function DataScreen() {
       days: (await loggedDates()).size,
     }
   })
-  const years = useLiveQuery(async () => {
-    const found = await yearsAvailable()
-    const current = todayKey().slice(0, 4)
-    return found.includes(current) ? found : [...found, current].sort()
-  }, [], [])
+  const years = useLiveQuery(async () => yearsAvailable(), [], [])
 
   useEffect(() => {
     if (!currentBoot()) void bootstrap()
@@ -87,7 +82,9 @@ export function DataScreen() {
       setMessage(
         archive.missingFiles > 0
           ? `${archive.name}: ${archive.mediaCount} foto ikut, ${archive.missingFiles} record tidak punya file di perangkat ini dan tidak dibungkus.`
-          : `${archive.name} tersimpan: ${archive.mediaCount} foto, ${formatBytes(archive.bytes)}.`,
+          : archive.mediaCount === 0
+            ? `${archive.name} tersimpan: tanpa foto, yang ikut hanya rencana dan checklist tahun ${year} (${formatBytes(archive.bytes)}).`
+            : `${archive.name} tersimpan: ${archive.mediaCount} foto, ${formatBytes(archive.bytes)}.`,
       )
     } catch (err) {
       setMessage(`Ekspor gagal: ${(err as Error).message}`)
@@ -164,12 +161,17 @@ export function DataScreen() {
 
         <Section label="Ekspor">
           <div className="flex flex-wrap gap-2">
-            {years.map((year) => (
+            {(years ?? []).map((year) => (
               <Button key={year} disabled={busy} onClick={() => void exportYear(year)} className="num">
                 {year}
               </Button>
             ))}
           </div>
+          {years?.length === 0 && (
+            <p className="text-[13px] leading-relaxed text-ink-2">
+              Belum ada foto, entri, atau checklist pada tahun mana pun, jadi belum ada yang bisa dibungkus.
+            </p>
+          )}
           <p className="mt-3 text-[12px] leading-relaxed text-ink-2">
             Satu file .cmx.zip per tahun: plan, checklist, catatan, dan semua kartunya. Browser akan mengunduhnya
             seperti file biasa — simpan di tempat yang kamu percaya, karena inilah satu-satunya salinanmu.

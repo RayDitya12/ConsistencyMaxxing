@@ -79,8 +79,20 @@ describe('arsip zip per tahun', () => {
     expect(await mediaForDate('2026-11-02')).toHaveLength(1)
   })
 
-  it('record tanpa file tidak ikut dibungkus, supaya arsip tidak berisi link mati', async () => {
-    await seedYear()
+  it('tahun tanpa foto tapi punya checklist tetap dianggap ada isinya', async () => {
+    const { item } = await seedYear()
+    await setCheck('2024-03-01', item.id, 'done')
+    expect(await yearsAvailable()).toEqual(['2024', '2025', '2026'])
+
+    const archive = await buildYearArchive('2024')
+    expect(archive.mediaCount).toBe(0)
+    const parsed = await readArchive(new File([archive.blob], archive.name))
+    expect(parsed.data.checks).toHaveLength(1)
+    expect(parsed.data.entries).toHaveLength(0)
+    expect(parsed.manifest.counts.templates).toBe(1)
+  })
+
+  it('record tanpa file tidak ikut dibungkus, supaya arsip tidak berisi link mati', async () => {    await seedYear()
     await getBackend().remove((await mediaForDate('2026-11-02'))[0].file)
     const archive = await buildYearArchive('2026')
     expect(archive.mediaCount).toBe(0)

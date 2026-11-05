@@ -12,7 +12,7 @@ sendiri.
 ```
 npm install
 npm run dev        # http://localhost:5173
-npm test           # vitest, 43 test
+npm test           # vitest, 44 test
 npm run lint       # oxlint
 npm run build         # dist/ + service worker
 npm run preview       # sajikan hasil build, cek mode offline di sini
